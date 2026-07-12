@@ -1,0 +1,1740 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TILTED HANNAM | event layout &amp; order</title>
+  <style>
+    :root{
+      --bg:#ffffff;
+      --fg:#111111;
+      --muted:#6b7280;
+      --line:#e5e7eb;
+      --card:#f9fafb;
+      --accent:#111111;
+      --shadow: 0 8px 24px rgba(0,0,0,.06);
+      --radius: 16px;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,Pretendard,Apple SD Gothic Neo,Noto Sans KR,sans-serif;
+      color:var(--fg);
+      background:linear-gradient(180deg,#fff, #fbfbfb);
+    }
+    header{
+      position:sticky; top:0; z-index:10;
+      background:rgba(255,255,255,.92);
+      backdrop-filter:saturate(180%) blur(10px);
+      border-bottom:1px solid var(--line);
+    }
+    .wrap{ max-width:1180px; margin:0 auto; padding:16px; }
+    .brand{
+      display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+      justify-content:space-between;
+    }
+    .title{ display:flex; flex-direction:column; gap:2px; }
+    .title h1{ margin:0; font-size:14px; letter-spacing:.6px; text-transform:lowercase; }
+    .title p{ margin:0; color:var(--muted); font-size:12px; text-transform:lowercase; }
+    .top-actions{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    .modeBadge{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:8px 10px; border-radius:999px;
+      border:1px solid var(--line);
+      background:#fff;
+      font-size:12px;
+      color:var(--muted);
+      user-select:none;
+      white-space:nowrap;
+      text-transform:lowercase;
+    }
+    .modeDot{ width:8px; height:8px; border-radius:999px; background:#9ca3af; }
+    .modeDot.admin{ background:#111; }
+    .modeDot.customer{ background:#16a34a; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div class="brand">
+        <div class="title">
+          <h1>TILTED HANNAM</h1>
+          <p>event layout &amp; order sheet</p>
+        </div>
+        <div class="top-actions">
+          <span class="modeBadge">
+            <span class="modeDot" id="modeDot"></span>
+            <span id="modeLabel">customer mode</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+<script src="https://upload-widget.cloudinary.com/latest/global/all.js"></script>
+<script src="./cloudinary.config.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+<script src="./firebase.config.js"></script>
+
+<div id="th-layout-planner-svg">
+  <style>
+    #th-layout-planner-svg{
+      --text:#111111;
+      --muted:#6b7280;
+      --line:#e5e7eb;
+      --soft:#f9fafb;
+      --active:#111111;
+      --activeText:#fff;
+      --danger:#c81e1e;
+      --radius:16px;
+      --shadow:0 8px 24px rgba(0,0,0,.06);
+      width:100%;
+      color:var(--text);
+      font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+      word-break:keep-all;
+    }
+
+    #th-layout-planner-svg *{box-sizing:border-box;}
+    #th-layout-planner-svg .th-wrap{max-width:1180px;margin:0 auto;padding:20px 12px;}
+    #th-layout-planner-svg .th-head-row{display:flex;align-items:center;gap:10px;flex-wrap:nowrap;margin:0 0 8px;width:100%;}
+    #th-layout-planner-svg .th-head-row .th-print-top-btn{margin-left:auto;flex:0 0 auto;}
+    #th-layout-planner-svg .th-title{margin:0;font-size:clamp(24px,3vw,38px);font-weight:800;letter-spacing:-.03em;}
+    #th-layout-planner-svg .th-desc{margin:0 0 18px;color:var(--muted);font-size:14px;line-height:1.6;}
+    #th-layout-planner-svg .th-tabs{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 16px;}
+    #th-layout-planner-svg .th-print-top-btn{margin-left:auto;}
+
+    #th-layout-planner-svg button,
+    #th-layout-planner-svg select,
+    #th-layout-planner-svg input{font:inherit;}
+
+    #th-layout-planner-svg button{
+      cursor:pointer;
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--text);
+      border-radius:12px;
+      padding:10px 14px;
+      font-weight:700;
+      box-shadow:0 1px 0 rgba(0,0,0,.03);
+      transition:.15s ease;
+    }
+    #th-layout-planner-svg button:hover{border-color:#d1d5db;}
+    #th-layout-planner-svg button.is-active{background:var(--active);color:var(--activeText);border-color:var(--active);}
+
+    #th-layout-planner-svg .th-grid{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:16px;align-items:start;}
+    #th-layout-planner-svg .th-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+    #th-layout-planner-svg .th-toolbar{padding:14px;border-bottom:1px solid var(--line);background:#fff;}
+    #th-layout-planner-svg .th-toolbar-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px;}
+    #th-layout-planner-svg .th-toolbar-row:last-child{margin-bottom:0;}
+    #th-layout-planner-svg .th-label{font-size:13px;font-weight:700;margin-right:2px;}
+
+    #th-layout-planner-svg .th-event-input{
+      height:39px;
+      min-width:180px;
+      padding:0 12px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:#fff;
+      color:var(--text);
+      font-size:14px;
+    }
+    #th-layout-planner-svg .th-event-input.person{min-width:150px;}
+    #th-layout-planner-svg .th-event-input.date{min-width:155px;}
+    #th-layout-planner-svg .th-event-input.meal{min-width:110px;width:120px;}
+    #th-layout-planner-svg .th-session-group{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+    #th-layout-planner-svg .th-session-btn{padding:9px 13px;font-size:13px;}
+
+    #th-layout-planner-svg select{height:39px;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--text);font-size:14px;}
+    #th-layout-planner-svg .th-small-btn{padding:9px 12px;font-size:13px;}
+    #th-layout-planner-svg .th-danger{color:var(--danger);border-color:rgba(200,30,30,.25);}
+    #th-layout-planner-svg .stage{width:100%;background:#fff;overflow:hidden;touch-action:none;}
+    #th-layout-planner-svg svg{display:block;width:100%;height:auto;background:#fff;}
+
+    #th-layout-planner-svg .wall{fill:none;stroke:#211817;stroke-width:10;stroke-linecap:square;stroke-linejoin:miter;}
+    #th-layout-planner-svg .wall-round{fill:none;stroke:#211817;stroke-width:10;stroke-linecap:round;stroke-linejoin:round;}
+    #th-layout-planner-svg .thin{fill:none;stroke:#211817;stroke-width:3;stroke-linecap:square;stroke-linejoin:miter;}
+    #th-layout-planner-svg .thin-round{fill:none;stroke:#211817;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;}
+    #th-layout-planner-svg .txt-title{fill:#211817;font-size:72px;font-weight:900;text-anchor:middle;letter-spacing:-2px;}
+    #th-layout-planner-svg .txt-guide{fill:#211817;font-size:48px;font-weight:500;}
+    #th-layout-planner-svg .txt-head{fill:#211817;font-size:56px;font-weight:900;text-anchor:middle;}
+    #th-layout-planner-svg .txt-room{fill:#211817;font-size:56px;font-weight:900;text-anchor:middle;}
+    #th-layout-planner-svg .txt-label{fill:#211817;font-size:44px;font-weight:800;text-anchor:middle;}
+    #th-layout-planner-svg .txt-small{fill:#211817;font-size:40px;font-weight:400;text-anchor:middle;}
+    #th-layout-planner-svg .txt-red{fill:#ef0000;font-size:38px;font-weight:900;}
+
+    #th-layout-planner-svg .slot{cursor:pointer;}
+    #th-layout-planner-svg .slot rect{fill:#fff;stroke:#211817;stroke-width:3;}
+    #th-layout-planner-svg .slot text{fill:#211817;font-size:40px;font-weight:400;text-anchor:middle;dominant-baseline:middle;pointer-events:none;}
+    #th-layout-planner-svg .slot:hover rect{fill:#f4f4f4;}
+    #th-layout-planner-svg .slot.is-selected rect{fill:#111;stroke:#111;}
+    #th-layout-planner-svg .slot.is-selected text{fill:#fff;font-weight:900;}
+
+    #th-layout-planner-svg .tree{fill:#211817;}
+    #th-layout-planner-svg .fence{stroke:#211817;stroke-width:20;stroke-linecap:square;}
+    #th-layout-planner-svg .road-line{fill:none;stroke:#111;stroke-width:18;stroke-linecap:round;stroke-linejoin:round;marker-end:url(#th-svg-arrow);}
+    #th-layout-planner-svg .road-soft{fill:none;stroke:rgba(17,17,17,.10);stroke-width:64;stroke-linecap:round;stroke-linejoin:round;}
+
+    #th-layout-planner-svg .garden-table{cursor:grab;touch-action:none;}
+    #th-layout-planner-svg .garden-table:active{cursor:grabbing;}
+    #th-layout-planner-svg .table-shape{fill:#fff;stroke:#111;stroke-width:5;}
+    #th-layout-planner-svg .chair{fill:#111;}
+    #th-layout-planner-svg .chair-line{stroke:#111;stroke-width:8;stroke-linecap:round;}
+    #th-layout-planner-svg .garden-table text{fill:#111;font-size:36px;font-weight:900;text-anchor:middle;dominant-baseline:middle;pointer-events:none;user-select:none;}
+    #th-layout-planner-svg .garden-table.is-selected .table-shape{fill:#111;stroke:#111;}
+    #th-layout-planner-svg .garden-table.is-selected text{fill:#fff;}
+    #th-layout-planner-svg .rotate-handle{cursor:pointer;}
+    #th-layout-planner-svg .rotate-handle circle{fill:#fff;stroke:#111;stroke-width:3;}
+    #th-layout-planner-svg .rotate-handle text{fill:#111!important;font-size:24px;font-weight:900;text-anchor:middle;dominant-baseline:middle;pointer-events:none;}
+
+    #th-layout-planner-svg .th-side{padding:16px;}
+    #th-layout-planner-svg .th-side h3{margin:0 0 10px;font-size:17px;}
+    #th-layout-planner-svg .th-guide{margin:0 0 14px;padding-left:18px;color:var(--muted);font-size:13px;line-height:1.65;}
+    #th-layout-planner-svg .th-summary{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:12px;font-size:13px;line-height:1.7;white-space:pre-wrap;min-height:120px;}
+    #th-layout-planner-svg .th-notice{min-height:22px;margin-top:10px;color:var(--danger);font-size:13px;font-weight:700;}
+    #th-layout-planner-svg #th-print-area{display:none;}
+
+    body.customer-mode #th-layout-planner-svg .adminOnly{display:none !important;}
+
+
+    /* =========================
+       DRINKS / REQUEST PANEL
+    ========================= */
+    #th-layout-planner-svg .th-extra-panel{display:none;padding:18px;background:#fff;}
+    #th-layout-planner-svg .th-extra-panel.is-active{display:block;}
+    #th-layout-planner-svg .th-extra-title{margin:0 0 12px;font-size:22px;font-weight:900;letter-spacing:-.03em;}
+    #th-layout-planner-svg .th-extra-desc{margin:0 0 16px;color:var(--muted);font-size:13px;line-height:1.6;}
+    #th-layout-planner-svg .th-section-box{border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px;background:#fff;}
+    #th-layout-planner-svg .th-section-title{display:flex;align-items:baseline;gap:8px;margin:0 0 12px;font-size:17px;font-weight:900;}
+    #th-layout-planner-svg .th-section-price{color:var(--muted);font-size:13px;font-weight:800;}
+    #th-layout-planner-svg .th-choice-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0;}
+    #th-layout-planner-svg .th-drink-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+    #th-layout-planner-svg .th-drink-item{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff;}
+    #th-layout-planner-svg .th-drink-canvas{position:relative;width:100%;aspect-ratio:4/3;background:var(--soft);overflow:hidden;}
+    #th-layout-planner-svg .th-drink-canvas img{width:100%;height:100%;object-fit:contain;display:block;}
+    #th-layout-planner-svg .th-drink-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;text-align:center;padding:8px;}
+    #th-layout-planner-svg .th-drink-info{display:grid;grid-template-columns:minmax(0,1fr) 92px;gap:10px;align-items:center;padding:10px;}
+    #th-layout-planner-svg .th-drink-name{font-weight:800;font-size:13px;line-height:1.35;}
+    #th-layout-planner-svg .th-drink-meta{display:block;margin-top:3px;color:var(--muted);font-size:12px;font-weight:600;}
+    #th-layout-planner-svg .th-drink-qty{width:92px;height:38px;border:1px solid var(--line);border-radius:12px;padding:0 10px;text-align:center;background:#fff;}
+    #th-layout-planner-svg .th-drink-tools{display:flex;flex-wrap:wrap;gap:6px;padding:0 10px 10px;}
+    #th-layout-planner-svg .th-drink-tools input[type="text"]{flex:1 1 140px;height:34px;border:1px solid var(--line);border-radius:10px;padding:0 8px;font-size:12px;background:#fff;}
+    #th-layout-planner-svg .th-drink-tools button{padding:7px 9px;font-size:11px;}
+    #th-layout-planner-svg .th-request-textarea{width:100%;min-height:360px;border:1px solid var(--line);border-radius:14px;padding:14px;font:inherit;font-size:14px;line-height:1.6;resize:vertical;background:#fff;}
+    #th-layout-planner-svg .th-mini-summary{margin-top:12px;border:1px dashed var(--line);border-radius:12px;padding:10px;color:var(--muted);font-size:13px;line-height:1.6;background:var(--soft);}
+    @media (max-width:720px){
+      #th-layout-planner-svg .th-drink-grid{grid-template-columns:1fr;}
+      #th-layout-planner-svg .th-drink-info{grid-template-columns:1fr 82px;}
+      #th-layout-planner-svg .th-drink-qty{width:82px;}
+    }
+
+    @media (max-width:860px){
+      #th-layout-planner-svg .th-grid{grid-template-columns:1fr;}
+      #th-layout-planner-svg .th-tabs{overflow-x:auto;flex-wrap:nowrap;padding-bottom:2px;}
+      #th-layout-planner-svg .th-tabs button{flex:0 0 auto;}
+      #th-layout-planner-svg .th-print-top-btn{margin-left:auto;}
+      #th-layout-planner-svg .th-tabs button,
+      #th-layout-planner-svg .th-small-btn,
+      #th-layout-planner-svg select,
+      #th-layout-planner-svg .th-event-input{font-size:13px;}
+      #th-layout-planner-svg .th-event-input{min-width:150px;flex:1 1 150px;}
+      #th-layout-planner-svg .th-event-input.date{min-width:150px;flex:0 0 150px;}
+      #th-layout-planner-svg .th-event-input.meal{min-width:100px;width:110px;flex:0 0 110px;}
+      #th-layout-planner-svg .th-session-group{flex:0 0 auto;}
+
+      #th-layout-planner-svg .th-couple-row{
+        flex-wrap:nowrap;
+        overflow:visible;
+      }
+      #th-layout-planner-svg .th-couple-row .th-label{
+        flex:0 0 auto;
+        white-space:nowrap;
+        margin-right:0;
+      }
+      #th-layout-planner-svg .th-couple-row .th-event-input.person{
+        flex:1 1 0;
+        min-width:0;
+      }
+    }
+
+    @media print{
+      @page{size:A4 portrait;margin:8mm;}
+      body *{visibility:hidden !important;}
+
+      #th-layout-planner-svg #th-print-area,
+      #th-layout-planner-svg #th-print-area *{visibility:visible !important;}
+
+      #th-layout-planner-svg #th-print-area{
+        display:block !important;
+        position:absolute;
+        left:0;
+        top:0;
+        width:100%;
+        background:#fff;
+      }
+
+      #th-layout-planner-svg .print-page{
+        width:100%;
+        height:calc(297mm - 16mm);
+        page-break-after:always;
+        break-after:page;
+        page-break-inside:avoid;
+        break-inside:avoid;
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        justify-content:center;
+        background:#fff;
+        padding:0;
+      }
+
+      #th-layout-planner-svg .print-page:last-child{page-break-after:auto;break-after:auto;}
+      #th-layout-planner-svg .print-page-title{margin:0 0 3mm;font-size:18px;font-weight:900;text-align:center;color:#111;font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;}
+      #th-layout-planner-svg .print-page-meta{margin:0 0 4mm;font-size:13px;font-weight:700;text-align:center;color:#111;font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;}
+      #th-layout-planner-svg .print-page svg{width:auto;height:auto;max-width:100%;max-height:235mm;background:#fff;overflow:visible;}
+      #th-layout-planner-svg .print-page-footer{width:100%;margin-top:4mm;padding-top:3mm;border-top:1px solid #111;font-size:14px;font-weight:900;text-align:center;color:#111;font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;}
+      #th-layout-planner-svg .print-page,
+      #th-layout-planner-svg .print-page *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      #th-layout-planner-svg #th-print-area .rotate-handle{display:none !important;}
+      #th-layout-planner-svg .print-text-page{
+        justify-content:flex-start;
+        align-items:stretch;
+        padding:12mm;
+      }
+      #th-layout-planner-svg .print-info-box{
+        width:100%;
+        flex:1 1 auto;
+        border:1px solid #111;
+        border-radius:8px;
+        padding:8mm;
+        font-size:14px;
+        font-weight:700;
+        line-height:1.75;
+        white-space:pre-wrap;
+        color:#111;
+        font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+        overflow:hidden;
+      }
+    }
+  </style>
+
+  <div class="th-wrap">
+    <div class="th-head-row">
+      <h2 class="th-title">Event Layout & Order Sheet</h2>
+      <button type="button" class="th-small-btn th-print-top-btn" id="th-print-pdf">PDF 프린트</button>
+    </div>
+
+    <div class="th-tabs">
+      <button type="button" class="is-active" data-floor="garden">GARDEN</button>
+      <button type="button" data-floor="first">1ST FLOOR</button>
+      <button type="button" data-floor="terrace">TERRACE &amp; 2ND FLOOR</button>
+      <button type="button" data-floor="drinks">음주류</button>
+      <button type="button" data-floor="request">요청사항</button>
+    </div>
+
+    <div class="th-grid">
+      <div class="th-card">
+        <div class="th-toolbar">
+          <div class="th-toolbar-row th-event-tool">
+            <span class="th-label">행사 날짜</span>
+            <input type="date" class="th-event-input date" id="th-event-date">
+
+            <span class="th-label">시간</span>
+            <div class="th-session-group" role="group" aria-label="행사 시간 선택">
+              <button type="button" class="th-small-btn th-session-btn is-active" data-session="lunch">런치</button>
+              <button type="button" class="th-small-btn th-session-btn" data-session="dinner">디너</button>
+            </div>
+
+            <span class="th-label">식사수</span>
+            <input type="number" class="th-event-input meal" id="th-meal-count" min="0" step="1" inputmode="numeric" placeholder="예: 80">
+          </div>
+
+          <div class="th-toolbar-row th-event-tool th-couple-row">
+            <span class="th-label">신랑</span>
+            <input type="text" class="th-event-input person" id="th-groom-name" placeholder="예: 홍길동">
+            <span class="th-label">신부</span>
+            <input type="text" class="th-event-input person" id="th-bride-name" placeholder="예: 김영희">
+          </div>
+
+          <div class="th-toolbar-row garden-tool">
+            <span class="th-label">로드 방향</span>
+            <select id="th-road-select">
+              <option value="left">left</option>
+              <option value="up-right">up-right</option>
+              <option value="up-left">up-left</option>
+              <option value="up">up</option>
+            </select>
+
+            <span class="th-label">테이블 모양</span>
+            <button type="button" class="th-small-btn is-active" data-shape="round">원형</button>
+            <button type="button" class="th-small-btn" data-shape="square">사각</button>
+            <button type="button" class="th-small-btn th-danger adminOnly" id="th-clear-garden">Garden 초기화</button>
+          </div>
+
+          <div class="th-notice" id="th-notice"></div>
+        </div>
+
+        <div class="stage">
+          <svg id="th-plan-svg" viewBox="0 560 1688 2204" aria-label="layout planner"></svg>
+
+          <div id="th-drinks-panel" class="th-extra-panel" aria-label="음주류 선택">
+            <h3 class="th-extra-title">음주류 선택</h3>
+            <button type="button" class="th-small-btn adminOnly" id="th-export-drink-images">이미지 맵 내보내기</button>
+
+            <div class="th-section-box">
+              <h4 class="th-section-title">웰컴드링크 <span class="th-section-price">30잔 55만원 / 60잔 100만원 / 90잔 145만원</span></h4>
+              <div class="th-choice-row">
+                <span class="th-label">선택</span>
+                <button type="button" class="th-small-btn" data-welcome-enabled="true">O</button>
+                <button type="button" class="th-small-btn is-active" data-welcome-enabled="false">X</button>
+              </div>
+              <div class="th-choice-row">
+                <span class="th-label">수량</span>
+                <button type="button" class="th-small-btn" data-welcome-package="30">30잔 / 55만원</button>
+                <button type="button" class="th-small-btn" data-welcome-package="60">60잔 / 100만원</button>
+                <button type="button" class="th-small-btn" data-welcome-package="90">90잔 / 145만원</button>
+              </div>
+              <div class="th-choice-row">
+                <span class="th-label">타입</span>
+                <button type="button" class="th-small-btn" data-welcome-type="alcohol">알콜</button>
+                <button type="button" class="th-small-btn" data-welcome-type="nonalcohol">논알콜</button>
+              </div>
+            </div>
+
+            <div class="th-section-box">
+              <h4 class="th-section-title">주류 <span class="th-section-price">와인/스파클링 단가</span></h4>
+              <div class="th-drink-grid" data-drink-group="wine"></div>
+            </div>
+
+            <div class="th-section-box">
+              <h4 class="th-section-title">주류 <span class="th-section-price">캔/병 0.8</span></h4>
+              <div class="th-drink-grid" data-drink-group="canBottle"></div>
+            </div>
+
+            <div class="th-section-box">
+              <h4 class="th-section-title">주류 <span class="th-section-price">대용량 55</span></h4>
+              <div class="th-drink-grid" data-drink-group="bulk"></div>
+            </div>
+
+            <div class="th-section-box">
+              <h4 class="th-section-title">음료 <span class="th-section-price">0.5</span></h4>
+              <div class="th-drink-grid" data-drink-group="soda"></div>
+            </div>
+
+          </div>
+
+          <div id="th-request-panel" class="th-extra-panel" aria-label="요청사항">
+            <h3 class="th-extra-title">요청사항</h3>
+                       <textarea id="th-request-note" class="th-request-textarea" placeholder="예시. 
+화촉점화시 테이블 세팅해 주세요.
+2부 케이크 커팅시 커팅칼 준비해 주세요.
+애프터시 배달 음식 오후7시 30분 도착 예정이에요. 음식 수령 및 세팅 부탁드려요."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <aside class="th-card th-side">
+        <h3>사용 방법</h3>
+        <ol class="th-guide">
+          <li>상단에서 Garden / 1층 / 2층을 선택합니다.</li>
+          <li>1층과 2층은 도면의 테이블 박스를 클릭합니다.</li>
+          <li>Garden은 로드 방향과 테이블 모양을 고른 뒤 빈 공간을 클릭합니다.</li>
+          <li>Garden 테이블은 드래그로 이동합니다.</li>
+          <li>Garden 테이블을 한 번 클릭하면 삭제됩니다. 사각 테이블은 ↻ 버튼을 마우스로 드래그해 원하는 각도로 회전합니다.</li>
+          <li>음주류 버튼에서 웰컴드링크, 주류, 음료 수량을 선택합니다.</li>
+          <li>요청사항 버튼에서 추가 요청사항을 입력합니다.</li>
+
+        </ol>
+        <h3>선택 내역</h3>
+        <div class="th-summary" id="th-summary"></div>
+      </aside>
+    </div>
+  </div>
+
+  <div id="th-print-area" aria-hidden="true"></div>
+
+  <script>
+    (function(){
+      const root = document.getElementById('th-layout-planner-svg');
+      const svg = root.querySelector('#th-plan-svg');
+      const notice = root.querySelector('#th-notice');
+      const summary = root.querySelector('#th-summary');
+      const eventDateInput = root.querySelector('#th-event-date');
+      const groomNameInput = root.querySelector('#th-groom-name');
+      const brideNameInput = root.querySelector('#th-bride-name');
+      const mealCountInput = root.querySelector('#th-meal-count');
+      const sessionButtons = root.querySelectorAll('[data-session]');
+      const NS = 'http://www.w3.org/2000/svg';
+
+      const state = {
+        floor:'garden',
+        event:{session:'lunch'},
+        garden:{road:'left',shape:'round',nextId:1,selectedId:null,tables:[]},
+        fixed:{first:new Set(),terrace:new Set()},
+        drinks:{
+          welcome:{enabled:false,package:'',type:''},
+          items:{}
+        },
+        requestNote:''
+      };
+
+      const roadMap = {
+        left:{label:'left',d:'M858 980 L858 2050'},
+        'up-right':{label:'up-right',d:'M1360 2050 L500 950'},
+        'up-left':{label:'up-left',d:'M1420 1080 L525 1900'},
+        'up-lef':{label:'up-left',d:'M1420 1080 L525 1900'},
+        up:{label:'up',d:'M1450 1510 L470 1510'}
+      };
+
+      let drag = null;
+      let rotateDrag = null;
+      let suppressNextClick = false;
+
+      function el(tag, attrs, parent){
+        const node = document.createElementNS(NS, tag);
+        Object.entries(attrs || {}).forEach(([key, val]) => {
+          if(key === 'text') node.textContent = val;
+          else if(key === 'html') node.innerHTML = val;
+          else node.setAttribute(key, val);
+        });
+        if(parent) parent.appendChild(node);
+        return node;
+      }
+
+      function clearSvg(){
+        svg.innerHTML = '';
+        const defs = el('defs', {}, svg);
+        const marker = el('marker', {id:'th-svg-arrow', markerWidth:'18', markerHeight:'18', refX:'15', refY:'9', orient:'auto'}, defs);
+        el('path', {d:'M2,2 L16,9 L2,16 Z', fill:'#111'}, marker);
+      }
+
+      function showNotice(text){
+        notice.textContent = text || '';
+        if(text){
+          clearTimeout(showNotice.timer);
+          showNotice.timer = setTimeout(() => {notice.textContent = '';}, 2500);
+        }
+      }
+
+      function line(x1,y1,x2,y2,cls,parent=svg){return el('line',{x1,y1,x2,y2,class:cls},parent);}
+      function rect(x,y,w,h,cls,parent=svg, extra={}){return el('rect',Object.assign({x,y,width:w,height:h,class:cls},extra),parent);}
+      function path(d,cls,parent=svg, extra={}){return el('path',Object.assign({d,class:cls},extra),parent);}
+      function text(x,y,content,cls,parent=svg, extra={}){return el('text',Object.assign({x,y,class:cls,text:content},extra),parent);}
+
+      function pine(x,y,s=1){
+        const g = el('g',{class:'tree',transform:`translate(${x} ${y}) scale(${s})`},svg);
+        el('path',{d:'M0 -120 L-72 -22 L-35 -22 L-90 65 L-35 65 L-35 125 L35 125 L35 65 L90 65 L35 -22 L72 -22 Z'},g);
+        return g;
+      }
+
+      function fenceLeft(x,y1,y2){for(let y=y1;y<=y2;y+=78) line(x-55,y,x+25,y,'fence');}
+      function fenceBottom(x1,x2,y){for(let x=x1;x<=x2;x+=78) line(x,y-25,x,y+55,'fence');}
+
+      function drawGardenBase(){
+        text(210,540,'*원형 또는 사각 테이블 (최대 12개/6인 테이블)','txt-guide');
+        text(844,680,'Enterance','txt-head');
+        rect(200,725,1308,1646,'wall');
+        fenceLeft(200,790,2290);
+        fenceBottom(250,1450,2370);
+
+        pine(340,850,0.82); pine(485,850,0.55); pine(1055,840,0.62); pine(1370,865,0.80);
+        pine(340,1190,0.50); pine(340,1410,0.50); pine(340,1650,0.50); pine(340,1890,0.50);
+        pine(370,2180,0.50); pine(600,2180,0.45); pine(830,2180,0.45); pine(1055,2180,0.45); pine(1280,2180,0.45);
+
+        rect(790,770,145,46,'thin-round',svg,{rx:23,ry:23});
+        rect(830,850,145,46,'thin-round',svg,{rx:23,ry:23});
+        path('M1140 765 C1180 930 1300 1010 1435 1050','wall-round');
+
+        text(170,2485,'*추후 인원 추가로 인한 테이블 추가 배치는 ','txt-red');
+        text(170,2550,'  틸티드한남에서 최적화된 동선으로 임의 배치합니다.','txt-red');
+        text(170,2620,'*테이블과 좌석 세팅은 인원수에 맞게 배치됩니다.','txt-red');
+        text(170,2690,'*지정석 불가','txt-red');
+
+        const road = roadMap[state.garden.road] || roadMap.left;
+        path(road.d,'road-soft',svg,{id:'garden-road-soft'});
+        path(road.d,'road-line',svg,{id:'garden-road'});
+        el('g',{id:'garden-table-layer'},svg);
+      }
+
+      function drawTableGraphic(g, table){
+        const rot = Number(table.rotation || 0);
+
+        if(table.shape === 'round'){
+          el('circle',{class:'table-shape',r:58},g);
+          [[0,-84],[72,-42],[72,42],[0,84],[-72,42],[-72,-42]].forEach(([x,y]) => {
+            el('circle',{class:'chair',cx:x,cy:y,r:10},g);
+          });
+        }else{
+          /* 사각 테이블만 회전: 테이블/의자만 회전하고 번호는 고정 */
+          const tableG = el('g',{class:'square-rotated',transform:`rotate(${rot})`},g);
+          el('rect',{class:'table-shape',x:-80,y:-48,width:160,height:96,rx:4,ry:4},tableG);
+          [-60,-11,38].forEach(x => line(x,-74,x+22,-74,'chair-line',tableG));
+          [-60,-11,38].forEach(x => line(x,74,x+22,74,'chair-line',tableG));
+
+          /* 회전 버튼: 사각 테이블 오른쪽 위 작은 ↻ 버튼 */
+          const handle = el('g',{class:'rotate-handle','data-rotate-id':table.id,transform:`rotate(${rot}) translate(88 -82)`},g);
+          el('circle',{r:18},handle);
+          text(0,1,'↻','',handle,{style:'font-size:24px;font-weight:900;text-anchor:middle;dominant-baseline:middle;pointer-events:none;'});
+        }
+
+        text(0,3,String(table.no),'',g,{style:'font-size:36px;font-weight:900;text-anchor:middle;dominant-baseline:middle;pointer-events:none;'});
+      }
+
+      function renderGardenTables(){
+        const layer = svg.querySelector('#garden-table-layer');
+        if(!layer) return;
+        layer.innerHTML = '';
+
+        state.garden.tables.forEach(table => {
+          const g = el('g',{class:'garden-table' + (state.garden.selectedId === table.id ? ' is-selected' : ''),transform:`translate(${table.x} ${table.y})`,'data-id':table.id},layer);
+          drawTableGraphic(g,table);
+
+          const rotateHandle = g.querySelector('.rotate-handle');
+          if(rotateHandle){
+            rotateHandle.addEventListener('pointerdown', e => {
+              e.preventDefault();
+              e.stopPropagation();
+              const p = svgPoint(e.clientX,e.clientY);
+              const startPointerAngle = Math.atan2(p.y - table.y, p.x - table.x) * 180 / Math.PI;
+              rotateDrag = {
+                id: table.id,
+                startPointerAngle,
+                startRotation: Number(table.rotation || 0),
+                moved:false
+              };
+              state.garden.selectedId = table.id;
+              try{svg.setPointerCapture(e.pointerId);}catch(err){}
+            });
+          }
+
+          g.addEventListener('pointerdown', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            const p = svgPoint(e.clientX,e.clientY);
+            drag = {id:table.id,dx:p.x-table.x,dy:p.y-table.y,startX:p.x,startY:p.y,moved:false};
+            setSelectedGarden(table.id);
+            try{svg.setPointerCapture(e.pointerId);}catch(err){}
+          });
+
+          g.addEventListener('click', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            if(suppressNextClick){
+              suppressNextClick = false;
+              return;
+            }
+            state.garden.tables = state.garden.tables.filter(t => t.id !== table.id);
+            state.garden.selectedId = null;
+            renumberGarden();
+            renderAll();
+          });
+        });
+      }
+
+      function drawSlot(group,id,x,y,w,h,label){
+        const g = el('g',{class:'slot' + (state.fixed[group].has(id) ? ' is-selected' : ''),'data-group':group,'data-id':id},svg);
+        rect(x,y,w,h,'',g);
+        text(x+w/2,y+h/2,label || id,'',g);
+        g.addEventListener('click',() => {
+          if(state.fixed[group].has(id)){
+            state.fixed[group].delete(id);
+          }else{
+            const addPeople = (group === 'first' && id === '1F_12') ? 12 : 6;
+            if(!canAddSeats(addPeople)){
+              showSeatLimitNotice();
+              return;
+            }
+            state.fixed[group].add(id);
+          }
+          renderAll();
+        });
+        return g;
+      }
+
+      function drawDoorArc(d){path(d,'wall-round');}
+
+      function drawFirstFloor(){
+        rect(130,780,1456,1564,'wall');
+        line(906,780,906,1120,'wall');
+        line(130,1120,1586,1120,'wall');
+        line(1124,1650,1124,2344,'wall');
+        line(130,1339,825,1339,'wall');
+        line(150,904,150,1065,'wall');
+        line(150,1360,150,1848,'wall');
+        line(150,2080,150,2245,'wall');
+        line(360,2322,525,2322,'wall');
+
+        text(500,975,'BATHROOM','txt-room');
+        text(1240,975,'STAFF ROOM','txt-room');
+        text(645,1428,'Main','txt-room');
+        text(1335,1428,'Sub','txt-room');
+
+        drawDoorArc('M130 1120 C230 1145 230 1285 130 1330');
+        drawDoorArc('M905 1120 C905 1015 820 1015 820 1120');
+        drawDoorArc('M930 1120 C930 1015 1020 1015 1020 1120');
+
+        for(let x=1236;x<=1545;x+=36) line(x,1120,x,1250,'wall');
+        line(1236,1250,1586,1250,'wall');
+
+        drawSlot('first','1F_1',150,1468,267,110,'1F_1');
+        drawSlot('first','1F_8',417,1468,267,110,'1F_8');
+        drawSlot('first','1F_2',150,1674,267,110,'1F_2');
+        drawSlot('first','1F_7',417,1674,267,110,'1F_7');
+        drawSlot('first','1F_3',150,1880,267,110,'1F_3');
+        drawSlot('first','1F_6',417,1880,267,110,'1F_6');
+        drawSlot('first','1F_4',150,2086,267,110,'1F_4');
+        drawSlot('first','1F_5',417,2086,267,110,'1F_5');
+        drawSlot('first','1F_9',855,1674,270,110,'1F_9');
+        drawSlot('first','1F_10',855,1880,270,110,'1F_10');
+        drawSlot('first','1F_11',855,2086,270,110,'1F_11');
+        drawSlot('first','1F_12',1222,1674,265,524,'1F_12');
+      }
+
+      function drawTerrace(){
+        path('M343 725 H1574 V2372 H160 V909 H343 Z','wall');
+        line(835,725,835,1055,'wall');
+        line(572,1055,1574,1055,'wall');
+        line(572,1055,572,2372,'wall');
+        line(1184,1055,1184,2372,'wall');
+        line(1184,1302,1574,1302,'wall');
+        line(1184,1497,1574,1497,'wall');
+        line(1184,2207,1565,2207,'wall');
+        line(598,1182,598,1605,'wall');
+        line(590,1945,590,2260,'wall');
+        line(572,1845,1184,1845,'wall');
+
+        text(1285,715,'Room_A','txt-room');
+        text(1390,1428,'TOILET','txt-room');
+        text(1392,1585,'Room_B','txt-room');
+        text(845,2148,'BEDROOM','txt-room');
+        text(1390,2298,'TOILET','txt-room');
+
+        drawDoorArc('M835 1055 C930 1055 970 960 835 950');
+        drawDoorArc('M1184 1302 C1290 1302 1290 1390 1184 1410');
+        drawDoorArc('M1184 1497 C1290 1497 1290 1585 1184 1605');
+        drawDoorArc('M1048 1845 C1048 1945 1125 1970 1184 1940');
+
+        for(let x=1210;x<=1538;x+=36) line(x,1055,x,1302,'wall');
+        line(1184,1182,1574,1182,'wall');
+
+        drawSlot('terrace','T_7',435,825,310,122,'T_7');
+        drawSlot('terrace','T_6',256,1074,310,122,'T_6');
+        drawSlot('terrace','T_5',256,1290,310,122,'T_5');
+        drawSlot('terrace','T_4',256,1506,310,122,'T_4');
+        drawSlot('terrace','T_3',256,1723,310,122,'T_3');
+        drawSlot('terrace','T_2',256,1939,310,122,'T_2');
+        drawSlot('terrace','T_1',256,2155,310,122,'T_1');
+        drawSlot('terrace','Room_A1',950,826,313,122,'Room_A1');
+        drawSlot('terrace','Room_A2',1263,826,311,122,'Room_A2');
+        drawSlot('terrace','Room_B1',1264,1703,310,122,'Room_B1');
+        drawSlot('terrace','Room_B2',1264,1948,310,122,'Room_B2');
+      }
+
+      function setSvgCrop(){
+        if(state.floor === 'garden') svg.setAttribute('viewBox', '0 560 1688 2204');
+        else if(state.floor === 'first') svg.setAttribute('viewBox', '0 700 1688 1680');
+        else svg.setAttribute('viewBox', '0 650 1688 1760');
+      }
+
+      function renderAll(){
+        clearSvg();
+        setSvgCrop();
+
+        const isSvgFloor = ['garden','first','terrace'].includes(state.floor);
+        svg.style.display = isSvgFloor ? 'block' : 'none';
+        const drinksPanel = root.querySelector('#th-drinks-panel');
+        const requestPanel = root.querySelector('#th-request-panel');
+        if(drinksPanel) drinksPanel.classList.toggle('is-active', state.floor === 'drinks');
+        if(requestPanel) requestPanel.classList.toggle('is-active', state.floor === 'request');
+
+        if(state.floor === 'garden'){
+          drawGardenBase();
+          renderGardenTables();
+        }else if(state.floor === 'first'){
+          drawFirstFloor();
+        }else if(state.floor === 'terrace'){
+          drawTerrace();
+        }
+
+        root.querySelectorAll('.garden-tool').forEach(el => {el.style.display = state.floor === 'garden' ? '' : 'none';});
+        root.querySelectorAll('[data-floor]').forEach(btn => {btn.classList.toggle('is-active',btn.dataset.floor === state.floor);});
+        renderDrinkControls();
+        renderSummary();
+      }
+
+      function svgPoint(clientX,clientY){
+        const pt = svg.createSVGPoint();
+        pt.x = clientX;
+        pt.y = clientY;
+        const ctm = svg.getScreenCTM();
+        return ctm ? pt.matrixTransform(ctm.inverse()) : {x:0,y:0};
+      }
+
+      function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
+
+      function addGardenTable(x,y){
+        if(state.garden.tables.length >= 12){
+          showNotice('Garden 테이블은 최대 12개까지 배치할 수 있습니다.');
+          return;
+        }
+        if(!canAddSeats(6)){
+          showSeatLimitNotice();
+          return;
+        }
+        const table = {
+          id:state.garden.nextId++,
+          no:state.garden.tables.length + 1,
+          shape:state.garden.shape,
+          rotation:0,
+          x:typeof x === 'number' ? clamp(x,300,1405) : 844,
+          y:typeof y === 'number' ? clamp(y,840,2240) : 1510
+        };
+        state.garden.tables.push(table);
+        state.garden.selectedId = table.id;
+        renderAll();
+      }
+
+      const ALL_FIRST_IDS = ['1F_1','1F_2','1F_3','1F_4','1F_5','1F_6','1F_7','1F_8','1F_9','1F_10','1F_11','1F_12'];
+      const ALL_TERRACE_IDS = ['T_1','T_2','T_3','T_4','T_5','T_6','T_7','Room_A1','Room_A2','Room_B1','Room_B2'];
+      const AUTO_MEAL_COUNT = 216;
+
+      const DRINK_CATALOG = [
+        {key:'laVieilleFermeRouge', name:'VENTOUX ROUGE FAMILLE PERRIN', label:'벙뚜 루즈 파미유 페랑', unit:'5.5', group:'wine'},
+        {key:'luberonBlanc', name:'LUBERON BLANC FAMILLE PERRIN', label:'루베롱 블랑 / 파미유 페랑', unit:'5.5', group:'wine'},
+        {key:'cavaBrut', name:'MONASTERIOLO CAVA BRUT', label:'모나스테리올로 까바 브뤼', unit:'5.5', group:'wine'},
+        {key:'laVieilleFermeRose', name:'LA VIEILLE FERME ROSE', label:'라 비에이 페름 로제', unit:'5.5', group:'wine'},
+        {key:'moscatoSpumante', name:'MOSCATO SPUMANTE GOLD LABEL', label:'모스카토 스푸만테 골드라벨 / 룽가로티', unit:'5.5', group:'wine'},
+        {key:'ayalaBrutMajeur', name:'BRUT MAJEUR NV AYALA', label:'브뤼 마저 NV / 아얄라', unit:'24.5', group:'wine'},
+        {key:'somersbyApple', name:'Somersby Apple', label:'써머스비 애플', unit:'0.8', group:'canBottle'},
+        {key:'stellaArtois', name:'Stella Artois', label:'스텔라 아르투아', unit:'0.8', group:'canBottle'},
+        {key:'budweiser', name:'Budweiser', label:'버드와이저', unit:'0.8', group:'canBottle'},
+        {key:'kgbVodkaLemon', name:'KGB Vodka Lemon', label:'KGB 보드카 레몬', unit:'0.8', group:'canBottle'},
+        {key:'tigerRadler', name:'Tiger Radler Lemon', label:'타이거 라들러 레몬', unit:'0.8', group:'canBottle'},
+        {key:'kronenbourg1664', name:'Kronenbourg 1664 Blanc', label:'크로넨버그 1664 블랑', unit:'0.8', group:'canBottle'},
+        {key:'draftBeer20L', name:'생맥주 20L', label:'생맥주 20L', unit:'55', group:'bulk'},
+        {key:'dongdongju20L', name:'동동주 20L', label:'동동주 20L', unit:'55', group:'bulk'},
+        {key:'highball10L', name:'하이볼 10L', label:'하이볼 10L', unit:'55', group:'bulk'},
+        {key:'pepsiRegular', name:'Pepsi', label:'펩시 일반', unit:'0.5', group:'soda'},
+        {key:'pepsiZero', name:'Pepsi Zero', label:'펩시 제로', unit:'0.5', group:'soda'},
+        {key:'drPepperRegular', name:'Dr Pepper', label:'닥터페퍼 일반', unit:'0.5', group:'soda'},
+        {key:'drPepperZero', name:'Dr Pepper Zero', label:'닥터페퍼 제로', unit:'0.5', group:'soda'},
+        {key:'spriteRegular', name:'Sprite', label:'스프라이트 일반', unit:'0.5', group:'soda'},
+        {key:'spriteZero', name:'Sprite Zero', label:'스프라이트 제로', unit:'0.5', group:'soda'},
+        {key:'sanpellegrinoGrapefruit', name:'Sanpellegrino Grapefruit', label:'산펠레그리노 과일 탄산 자몽', unit:'0.5', group:'soda'},
+        {key:'sanpellegrinoLemon', name:'Sanpellegrino Lemon', label:'산펠레그리노 과일 탄산 레몬', unit:'0.5', group:'soda'},
+        {key:'sanpellegrinoBloodOrange', name:'Sanpellegrino Blood Orange', label:'산펠레그리노 과일 탄산 레드오렌지', unit:'0.5', group:'soda'},
+        {key:'sanpellegrinoOrange', name:'Sanpellegrino Orange', label:'산펠레그리노 과일 탄산 오렌지', unit:'0.5', group:'soda'},
+        {key:'spellegrinoWater', name:'S.Pellegrino Sparkling Water', label:'산펠레그리노 탄산수', unit:'0.5', group:'soda'}
+      ];
+
+      const IS_ADMIN = new URLSearchParams(location.search).get('admin') === '1';
+      const FIREBASE_DRINK_IMAGE_PATH = 'tiltedHannam/drinkImages';
+
+      const CLOUDINARY_CONFIG = (window.CLOUDINARY_CONFIG && typeof window.CLOUDINARY_CONFIG === 'object')
+        ? window.CLOUDINARY_CONFIG
+        : {cloudName:'', uploadPreset:'', folder:'tilted-hannam', sources:['local','camera','url'], multiple:false};
+
+      const FIREBASE_CONFIG = (window.FIREBASE_CONFIG && typeof window.FIREBASE_CONFIG === 'object')
+        ? window.FIREBASE_CONFIG
+        : {apiKey:'', authDomain:'', databaseURL:'', projectId:'', storageBucket:'', messagingSenderId:'', appId:''};
+
+      let REMOTE_DRINK_IMAGE_MAP = {};
+      let FIREBASE_DRINK_IMAGE_MAP = {};
+      let ADMIN_RUNTIME_DRINK_IMAGE_MAP = {};
+      let FIREBASE_DRINK_REF = null;
+      let FIREBASE_DRINK_READY = false;
+
+      function validateImageUrl(url){
+        return /^https?:\/\//i.test(String(url || '').trim());
+      }
+
+      function normalizeDisplayImageUrl(url){
+        const raw = String(url || '').trim();
+        if(!raw || !/res\.cloudinary\.com/.test(raw)) return raw;
+        return raw.replace('/image/upload/', '/image/upload/f_auto,q_auto,c_limit,w_800/');
+      }
+
+      function cloudinaryReady(){
+        return !!(window.cloudinary && CLOUDINARY_CONFIG.cloudName && CLOUDINARY_CONFIG.uploadPreset);
+      }
+
+      function firebaseReady(){
+        return !!(window.firebase && FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.databaseURL);
+      }
+
+      function cleanImageMap(data){
+        const out = {};
+        if(!data || typeof data !== 'object') return out;
+        Object.keys(data).forEach((key) => {
+          const item = data[key];
+          const url = typeof item === 'string' ? item : (item && item.url) || '';
+          if(validateImageUrl(url)) out[key] = String(url).trim();
+        });
+        return out;
+      }
+
+      function getMergedDrinkImageMap(){
+        return Object.assign({}, REMOTE_DRINK_IMAGE_MAP, FIREBASE_DRINK_IMAGE_MAP, ADMIN_RUNTIME_DRINK_IMAGE_MAP);
+      }
+
+      async function loadRemoteDrinkImageMap(){
+        try{
+          const res = await fetch('./drink_image_map.json', {cache:'no-store'});
+          if(!res.ok) throw new Error('load failed');
+          REMOTE_DRINK_IMAGE_MAP = cleanImageMap(await res.json());
+        }catch(e){
+          REMOTE_DRINK_IMAGE_MAP = {};
+        }
+      }
+
+      function initFirebaseRealtimeDrinkImages(){
+        if(!firebaseReady()) return;
+        try{
+          const app = window.firebase.apps && window.firebase.apps.length ? window.firebase.app() : window.firebase.initializeApp(FIREBASE_CONFIG);
+          const db = window.firebase.database();
+          FIREBASE_DRINK_REF = db.ref(FIREBASE_DRINK_IMAGE_PATH);
+          FIREBASE_DRINK_READY = true;
+          FIREBASE_DRINK_REF.on('value', (snapshot) => {
+            FIREBASE_DRINK_IMAGE_MAP = cleanImageMap(snapshot.val());
+            renderDrinkItems();
+          }, (error) => {
+            console.error('Firebase drink image sync failed', error);
+          });
+        }catch(e){
+          FIREBASE_DRINK_READY = false;
+          console.error('Firebase init failed', e);
+        }
+      }
+
+      function setDrinkImage(key, url){
+        const clean = String(url || '').trim();
+        if(!clean){
+          deleteDrinkImage(key);
+          return;
+        }
+        ADMIN_RUNTIME_DRINK_IMAGE_MAP[key] = clean;
+        renderDrinkItems();
+        if(FIREBASE_DRINK_READY && FIREBASE_DRINK_REF){
+          FIREBASE_DRINK_REF.child(key).set(clean).catch((error) => {
+            console.error('Firebase drink image save failed', error);
+            alert('Firebase 저장 실패: Database Rules 또는 firebase.config.js를 확인하세요.');
+          });
+        }
+      }
+
+      function deleteDrinkImage(key){
+        delete ADMIN_RUNTIME_DRINK_IMAGE_MAP[key];
+        delete FIREBASE_DRINK_IMAGE_MAP[key];
+        renderDrinkItems();
+        if(FIREBASE_DRINK_READY && FIREBASE_DRINK_REF){
+          FIREBASE_DRINK_REF.child(key).remove().catch((error) => {
+            console.error('Firebase drink image delete failed', error);
+            alert('Firebase 삭제 실패: Database Rules 또는 firebase.config.js를 확인하세요.');
+          });
+        }
+      }
+
+      function openDrinkImageUpload(targetKey, afterUpload){
+        if(!IS_ADMIN){
+          alert('admin mode only');
+          return;
+        }
+        if(!cloudinaryReady()){
+          alert('cloudinary.config.js 설정이 필요합니다.');
+          return;
+        }
+        const widget = window.cloudinary.createUploadWidget({
+          cloudName: CLOUDINARY_CONFIG.cloudName,
+          uploadPreset: CLOUDINARY_CONFIG.uploadPreset,
+          folder: CLOUDINARY_CONFIG.folder || 'tilted-hannam',
+          sources: Array.isArray(CLOUDINARY_CONFIG.sources) ? CLOUDINARY_CONFIG.sources : ['local','camera','url'],
+          multiple: false,
+          resourceType: 'image',
+          clientAllowedFormats: ['jpg','jpeg','png','webp','avif'],
+          maxFiles: 1,
+          showAdvancedOptions: false,
+          cropping: false,
+          theme: 'minimal'
+        }, (error, result) => {
+          if(error){
+            console.error(error);
+            alert('업로드 실패');
+            return;
+          }
+          if(result && result.event === 'success'){
+            const secureUrl = result.info && result.info.secure_url ? result.info.secure_url : '';
+            if(secureUrl){
+              setDrinkImage(targetKey, secureUrl);
+              if(typeof afterUpload === 'function') afterUpload(secureUrl);
+            }
+          }
+        });
+        widget.open();
+      }
+
+      function downloadTextFile(filename, text, mime){
+        const blob = new Blob([text], {type: mime || 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      function exportDrinkImageMap(){
+        if(!IS_ADMIN){
+          alert('admin mode only');
+          return;
+        }
+        const merged = getMergedDrinkImageMap();
+        const cleaned = {};
+        Object.keys(merged).sort().forEach((k) => {
+          const v = String(merged[k] || '').trim();
+          if(validateImageUrl(v)) cleaned[k] = v;
+        });
+        if(!Object.keys(cleaned).length){
+          alert('no image urls to export.');
+          return;
+        }
+        downloadTextFile('drink_image_map.json', JSON.stringify(cleaned, null, 2));
+      }
+
+      function renderDrinkItems(){
+        const groups = root.querySelectorAll('[data-drink-group]');
+        groups.forEach((grid) => {
+          const groupName = grid.dataset.drinkGroup;
+          grid.innerHTML = '';
+          DRINK_CATALOG.filter((item) => item.group === groupName).forEach((item) => {
+            grid.appendChild(buildDrinkCard(item));
+          });
+        });
+        renderDrinkControls();
+      }
+
+      function buildDrinkCard(item){
+        const imageMap = getMergedDrinkImageMap();
+        const src = normalizeDisplayImageUrl(imageMap[item.key] || '');
+
+        const card = document.createElement('div');
+        card.className = 'th-drink-item';
+
+        const canvas = document.createElement('div');
+        canvas.className = 'th-drink-canvas';
+        if(src){
+          const img = document.createElement('img');
+          img.src = src;
+          img.alt = item.name;
+          canvas.appendChild(img);
+        }else{
+          const ph = document.createElement('div');
+          ph.className = 'th-drink-placeholder';
+          ph.textContent = '이미지 없음';
+          canvas.appendChild(ph);
+        }
+
+        const info = document.createElement('label');
+        info.className = 'th-drink-info';
+        const meta = document.createElement('span');
+        meta.innerHTML = '<span class="th-drink-name"></span><span class="th-drink-meta"></span>';
+        meta.querySelector('.th-drink-name').textContent = item.name;
+        meta.querySelector('.th-drink-meta').textContent = item.label + ' · ' + item.unit;
+
+        const qtyInput = document.createElement('input');
+        qtyInput.className = 'th-drink-qty';
+        qtyInput.type = 'number';
+        qtyInput.min = '0';
+        qtyInput.step = '1';
+        qtyInput.placeholder = '0';
+        qtyInput.dataset.drinkQty = item.key;
+        qtyInput.addEventListener('input', () => {
+          const value = Math.max(0, Math.floor(Number(qtyInput.value || 0)));
+          if(value > 0) state.drinks.items[item.key] = value;
+          else delete state.drinks.items[item.key];
+          renderDrinkControls();
+          renderSummary();
+        });
+
+        info.appendChild(meta);
+        info.appendChild(qtyInput);
+
+        const tools = document.createElement('div');
+        tools.className = 'th-drink-tools adminOnly';
+
+        const urlInput = document.createElement('input');
+        urlInput.type = 'text';
+        urlInput.placeholder = 'image url';
+        urlInput.value = imageMap[item.key] || '';
+        urlInput.addEventListener('click', (e) => e.stopPropagation());
+
+        const btnUpload = document.createElement('button');
+        btnUpload.type = 'button';
+        btnUpload.textContent = '업로드';
+        btnUpload.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openDrinkImageUpload(item.key, (secureUrl) => { urlInput.value = secureUrl; });
+        });
+
+        const btnApply = document.createElement('button');
+        btnApply.type = 'button';
+        btnApply.textContent = '적용';
+        btnApply.addEventListener('click', (e) => {
+          e.stopPropagation();
+          setDrinkImage(item.key, urlInput.value);
+        });
+
+        const btnDel = document.createElement('button');
+        btnDel.type = 'button';
+        btnDel.textContent = '삭제';
+        btnDel.addEventListener('click', (e) => {
+          e.stopPropagation();
+          deleteDrinkImage(item.key);
+        });
+
+        tools.appendChild(urlInput);
+        tools.appendChild(btnUpload);
+        tools.appendChild(btnApply);
+        tools.appendChild(btnDel);
+
+        card.appendChild(canvas);
+        card.appendChild(info);
+        card.appendChild(tools);
+        return card;
+      }
+
+      function getMealCountValue(){
+        if(!mealCountInput) return 0;
+        const n = Number(String(mealCountInput.value || '').replace(/[^0-9.]/g,''));
+        return Number.isFinite(n) ? n : 0;
+      }
+
+      function shouldAutoSelectAllSeats(){
+        return getMealCountValue() >= AUTO_MEAL_COUNT;
+      }
+
+      function getRoadPoints(){
+        const road = state.garden.road;
+        if(road === 'up-right') return {x1:1360,y1:2050,x2:500,y2:950};
+        if(road === 'up-left' || road === 'up-lef') return {x1:1420,y1:1080,x2:525,y2:1900};
+        if(road === 'up') return {x1:1450,y1:1510,x2:470,y2:1510};
+        return {x1:858,y1:980,x2:858,y2:2050};
+      }
+
+      function autoPlaceGardenTables(){
+        const road = state.garden.road;
+
+        if(!canReplaceGardenTableCount(12)){
+          showSeatLimitNotice();
+          return false;
+        }
+
+        /*
+          자동 배치 좌표만 수정
+          - 기존 레이아웃/도면/PDF/계산 로직은 변경하지 않음
+          - 로드 라인/화살표와 테이블이 겹치지 않도록 좌표를 라인 양쪽으로 충분히 이격
+          - up-right / up-left는 규칙적인 지그재그 배치
+          - up은 상단 6개 + 하단 6개로 분산 배치
+        */
+        const presets = {
+          left: [
+            {x:1285,y:1080}, {x:1095,y:1260}, {x:1300,y:1470}, {x:1095,y:1650}, {x:1310,y:1840}, {x:1110,y:2045},
+            {x:520,y:1080},  {x:675,y:1260},  {x:520,y:1470},  {x:675,y:1650},  {x:520,y:1840},  {x:675,y:2045}
+          ],
+
+          'up-right': [
+            {x:440,y:1040},  {x:650,y:1235},  {x:430,y:1425},  {x:660,y:1630},  {x:500,y:1840},  {x:735,y:2060},
+            {x:1160,y:1040}, {x:1345,y:1260}, {x:1195,y:1455}, {x:1390,y:1645}, {x:1390,y:1850}, {x:1160,y:2140}
+          ],
+
+          'up-left': [
+            {x:1110,y:1040}, {x:1335,y:1240}, {x:1190,y:1450}, {x:1390,y:1635}, {x:1210,y:1845}, {x:1375,y:2050},
+            {x:455,y:1040},  {x:650,y:1235},  {x:470,y:1445},  {x:615,y:1640},  {x:790,y:1995},  {x:590,y:2160}
+          ],
+
+          'up-lef': [
+            {x:1110,y:1040}, {x:1335,y:1240}, {x:1190,y:1450}, {x:1390,y:1635}, {x:1210,y:1845}, {x:1375,y:2050},
+            {x:455,y:1040},  {x:650,y:1235},  {x:470,y:1445},  {x:615,y:1640},  {x:790,y:1995},  {x:590,y:2160}
+          ],
+
+          up: [
+            {x:460,y:1050},  {x:700,y:1265},  {x:925,y:1050},  {x:1165,y:1265}, {x:1370,y:1050}, {x:610,y:1330},
+            {x:475,y:1785},  {x:705,y:2055},  {x:965,y:1785},  {x:1215,y:2055}, {x:1390,y:1785}, {x:865,y:2055}
+          ]
+        };
+
+        const coords = presets[road] || presets.left;
+        state.garden.tables = coords.map((pos, idx) => ({
+          id:idx + 1,
+          no:idx + 1,
+          shape:state.garden.shape,
+          rotation:0,
+          x:clamp(pos.x,300,1405),
+          y:clamp(pos.y,840,2240)
+        }));
+
+        state.garden.nextId = 13;
+        state.garden.selectedId = null;
+        return true;
+      }
+
+      function autoSelectAllSeatsByMealCount(){
+        if(!shouldAutoSelectAllSeats()) return false;
+
+        state.fixed.first = new Set(ALL_FIRST_IDS);
+        state.fixed.terrace = new Set(ALL_TERRACE_IDS);
+        autoPlaceGardenTables();
+        return true;
+      }
+
+      function renumberGarden(){state.garden.tables.forEach((t,i) => {t.no = i + 1;});}
+
+      function setSelectedGarden(id){
+        state.garden.selectedId = id;
+        svg.querySelectorAll('.garden-table').forEach(g => {g.classList.toggle('is-selected',Number(g.dataset.id) === id);});
+        renderSummary();
+      }
+
+      function sortIds(set){
+        return Array.from(set).sort((a,b) => {
+          const na = Number((String(a).match(/(\d+)$/)||[])[1] || 9999);
+          const nb = Number((String(b).match(/(\d+)$/)||[])[1] || 9999);
+          return na - nb || String(a).localeCompare(String(b));
+        });
+      }
+
+      function getSessionInfo(){
+        const map = {
+          lunch:{label:'런치', time:'12:00'},
+          dinner:{label:'디너', time:'18:00'}
+        };
+        return map[state.event.session] || map.lunch;
+      }
+
+      function formatEventDate(value){
+        if(!value) return '';
+        const parts = value.split('-');
+        if(parts.length !== 3) return value;
+        return parts[0] + '.' + parts[1] + '.' + parts[2];
+      }
+
+      function getEventInfo(){
+        const session = getSessionInfo();
+        const date = formatEventDate((eventDateInput && eventDateInput.value) || '');
+        const sessionText = session.label + ' ' + session.time;
+        const mealCount = (mealCountInput && mealCountInput.value.trim()) || '';
+
+        return {
+          date:date,
+          session:session.label,
+          time:session.time,
+          mealCount:mealCount,
+          schedule:date ? date + ' / ' + sessionText : sessionText,
+          groom:(groomNameInput && groomNameInput.value.trim()) || '',
+          bride:(brideNameInput && brideNameInput.value.trim()) || ''
+        };
+      }
+
+      function getPrintEventText(){
+        const info = getEventInfo();
+        return '행사 일정: ' + (info.schedule || '-') +
+          '  |  식사수: ' + (info.mealCount ? info.mealCount + '명' : '-') +
+          '  |  신랑: ' + (info.groom || '-') +
+          '  |  신부: ' + (info.bride || '-');
+      }
+
+      function getLayoutStats(){
+        const gardenTableCount = state.garden.tables.length;
+        const gardenPeople = gardenTableCount * 6;
+        const firstIds = sortIds(state.fixed.first);
+        const terraceIds = sortIds(state.fixed.terrace);
+
+        const firstPeople = firstIds.reduce((sum, id) => sum + (id === '1F_12' ? 12 : 6), 0);
+        const terracePeople = terraceIds.length * 6;
+        const totalTableCount = gardenTableCount + firstIds.length + terraceIds.length;
+        const totalPeople = gardenPeople + firstPeople + terracePeople;
+
+        return {
+          gardenTableCount,
+          gardenPeople,
+          firstTableCount:firstIds.length,
+          firstPeople,
+          terraceTableCount:terraceIds.length,
+          terracePeople,
+          totalTableCount,
+          totalPeople
+        };
+      }
+
+      function getSeatLimit(){
+        const meal = getMealCountValue();
+        return meal > 0 ? meal + 6 : Infinity;
+      }
+
+      function showSeatLimitNotice(){
+        showNotice('입력한 식사수보다 좌석수를 6인 이상 초과해서 선택할 수 없습니다.');
+      }
+
+      function canAddSeats(addPeople){
+        const limit = getSeatLimit();
+        if(!Number.isFinite(limit)) return true;
+        return (getLayoutStats().totalPeople + addPeople) <= limit;
+      }
+
+      function canReplaceGardenTableCount(nextGardenCount){
+        const limit = getSeatLimit();
+        if(!Number.isFinite(limit)) return true;
+        const stats = getLayoutStats();
+        const nextTotalPeople = stats.totalPeople - stats.gardenPeople + (nextGardenCount * 6);
+        return nextTotalPeople <= limit;
+      }
+
+      function isCurrentSeatCountOverLimit(){
+        const limit = getSeatLimit();
+        if(!Number.isFinite(limit)) return false;
+        return getLayoutStats().totalPeople > limit;
+      }
+
+
+      function getDrinkQty(key){
+        const n = Number(state.drinks.items[key] || 0);
+        return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+      }
+
+      function formatMoneyManwon(value){
+        const n = Number(value || 0);
+        if(!Number.isFinite(n)) return '0만원';
+        return (Math.round(n * 10) / 10).toLocaleString('ko-KR') + '만원';
+      }
+
+      function getWelcomePrice(){
+        const priceMap = { '30':55, '60':100, '90':145 };
+        return state.drinks.welcome.enabled ? (priceMap[state.drinks.welcome.package] || 0) : 0;
+      }
+
+      function getDrinkTotalAmount(){
+        let total = getWelcomePrice();
+        DRINK_CATALOG.forEach(item => {
+          const qty = getDrinkQty(item.key);
+          const unit = Number(item.unit || 0);
+          if(qty > 0 && Number.isFinite(unit)) total += qty * unit;
+        });
+        return Math.round(total * 10) / 10;
+      }
+
+      function getSelectedDrinkLines(){
+        const lines = [];
+
+        if(state.drinks.welcome.enabled){
+          const packageText = state.drinks.welcome.package
+            ? (state.drinks.welcome.package + '잔')
+            : '수량 미선택';
+          const typeText = state.drinks.welcome.type === 'alcohol'
+            ? '알콜'
+            : (state.drinks.welcome.type === 'nonalcohol' ? '논알콜' : '타입 미선택');
+          const welcomePrice = getWelcomePrice();
+          lines.push('웰컴드링크: O / ' + packageText + ' / ' + typeText + (welcomePrice ? ' / ' + formatMoneyManwon(welcomePrice) : ''));
+        }
+
+        DRINK_CATALOG.forEach(item => {
+          const qty = getDrinkQty(item.key);
+          if(qty > 0){
+            const unit = Number(item.unit || 0);
+            const amount = Number.isFinite(unit) ? qty * unit : 0;
+            lines.push(item.label + ': ' + qty + '개' + (item.unit ? ' / 단가 ' + item.unit + '만원 / 금액 ' + formatMoneyManwon(amount) : ''));
+          }
+        });
+
+        if(lines.length){
+          lines.push('음주류 총금액: ' + formatMoneyManwon(getDrinkTotalAmount()));
+        }
+
+        return lines;
+      }
+
+      function renderDrinkControls(){
+        root.querySelectorAll('[data-welcome-enabled]').forEach(btn => {
+          const val = btn.dataset.welcomeEnabled === 'true';
+          btn.classList.toggle('is-active', !!state.drinks.welcome.enabled === val);
+        });
+        root.querySelectorAll('[data-welcome-package]').forEach(btn => {
+          btn.classList.toggle('is-active', state.drinks.welcome.package === btn.dataset.welcomePackage);
+        });
+        root.querySelectorAll('[data-welcome-type]').forEach(btn => {
+          btn.classList.toggle('is-active', state.drinks.welcome.type === btn.dataset.welcomeType);
+        });
+        root.querySelectorAll('[data-drink-qty]').forEach(input => {
+          const key = input.dataset.drinkQty;
+          const val = getDrinkQty(key);
+          if(document.activeElement !== input) input.value = val ? String(val) : '';
+        });
+        const requestNote = root.querySelector('#th-request-note');
+        if(requestNote && document.activeElement !== requestNote) requestNote.value = state.requestNote || '';
+
+        const mini = root.querySelector('#th-drinks-mini-summary');
+        if(mini){
+          const lines = getSelectedDrinkLines();
+          mini.textContent = lines.length ? lines.join('\n') : '선택된 음주류가 없습니다.';
+        }
+      }
+
+      function renderSummary(){
+        const road = roadMap[state.garden.road] || roadMap.left;
+        const stats = getLayoutStats();
+        const info = getEventInfo();
+
+        summary.textContent = [
+          '[EVENT]',
+          '- 행사 일정: ' + (info.schedule || '-'),
+          '- 식사수: ' + (info.mealCount ? info.mealCount + '명' : '-'),
+          '- 신랑: ' + (info.groom || '-'),
+          '- 신부: ' + (info.bride || '-'),
+          '',
+          '[GARDEN]',
+          '- 로드 방향: ' + road.label,
+          '- 선택 모양: ' + (state.garden.shape === 'round' ? '원형' : '사각'),
+          '- 테이블 수: ' + stats.gardenTableCount + '개',
+          '- 인원수: ' + stats.gardenPeople + '명',
+          '',
+          '[1ST FLOOR]',
+          '- 테이블 수: ' + stats.firstTableCount + '개',
+          '- 인원수: ' + stats.firstPeople + '명',
+          '',
+          '[TERRACE & 2ND FLOOR]',
+          '- 테이블 수: ' + stats.terraceTableCount + '개',
+          '- 인원수: ' + stats.terracePeople + '명',
+          '',
+          '[TOTAL]',
+          '- 총 테이블 수: ' + stats.totalTableCount + '개',
+          '- 총 인원수: ' + stats.totalPeople + '명',
+          '',
+          '[음주류]',
+          ...(getSelectedDrinkLines().length ? getSelectedDrinkLines().map(line => '- ' + line) : ['- 선택 없음']),
+          '',
+          '[요청사항]',
+          '- ' + (state.requestNote || '-')
+        ].join('\n');
+      }
+
+      function drawFloorForPrint(floor){
+        state.floor = floor;
+        clearSvg();
+        if(floor === 'garden'){
+          drawGardenBase();
+          renderGardenTables();
+        }else if(floor === 'first'){
+          drawFirstFloor();
+        }else{
+          drawTerrace();
+        }
+      }
+
+      function getPrintFooterText(floor){
+        const stats = getLayoutStats();
+        if(floor === 'garden'){
+          return 'GARDEN  |  테이블 수 ' + stats.gardenTableCount + '개  /  인원수 ' + stats.gardenPeople + '명  |  전체 인원수 ' + stats.totalPeople + '명';
+        }
+        if(floor === 'first'){
+          return '1ST FLOOR  |  테이블 수 ' + stats.firstTableCount + '개  /  인원수 ' + stats.firstPeople + '명  |  전체 인원수 ' + stats.totalPeople + '명';
+        }
+        return 'TERRACE & 2ND FLOOR  |  테이블 수 ' + stats.terraceTableCount + '개  /  인원수 ' + stats.terracePeople + '명  |  전체 인원수 ' + stats.totalPeople + '명';
+      }
+
+      function makePrintPage(titleText, floor, viewBox){
+        drawFloorForPrint(floor);
+        svg.setAttribute('viewBox', viewBox);
+
+        /* 음주류/요청사항 탭에서 프린트해도 배치도 SVG가 display:none 상태로 복제되지 않도록 보정 */
+        svg.style.display = 'block';
+
+        const page = document.createElement('section');
+        page.className = 'print-page';
+
+        const title = document.createElement('div');
+        title.className = 'print-page-title';
+        title.textContent = titleText;
+
+        const meta = document.createElement('div');
+        meta.className = 'print-page-meta';
+        meta.textContent = getPrintEventText();
+
+        const clonedSvg = svg.cloneNode(true);
+        clonedSvg.removeAttribute('id');
+        clonedSvg.style.display = 'block';
+        clonedSvg.querySelectorAll('.rotate-handle').forEach(function(el){ el.remove(); });
+
+        if(floor === 'garden'){
+          clonedSvg.querySelectorAll('text').forEach(function(t){
+            const content = t.textContent || '';
+            if(content.includes('원형 또는 사각 테이블')) t.remove();
+          });
+        }
+
+        const footer = document.createElement('div');
+        footer.className = 'print-page-footer';
+        footer.textContent = getPrintFooterText(floor);
+
+        page.appendChild(title);
+        page.appendChild(meta);
+        page.appendChild(clonedSvg);
+        page.appendChild(footer);
+        return page;
+      }
+
+      function makeTextPrintPage(titleText, bodyText){
+        const page = document.createElement('section');
+        page.className = 'print-page print-text-page';
+
+        const title = document.createElement('div');
+        title.className = 'print-page-title';
+        title.textContent = titleText;
+
+        const meta = document.createElement('div');
+        meta.className = 'print-page-meta';
+        meta.textContent = getPrintEventText();
+
+        const box = document.createElement('div');
+        box.className = 'print-info-box';
+        box.textContent = bodyText && bodyText.trim() ? bodyText : '선택된 내용이 없습니다.';
+
+        page.appendChild(title);
+        page.appendChild(meta);
+        page.appendChild(box);
+        return page;
+      }
+
+      function getDrinksPrintText(){
+        const lines = getSelectedDrinkLines();
+        return lines.length ? lines.join('\n') : '선택된 음주류가 없습니다.';
+      }
+
+      function getRequestPrintText(){
+        return (state.requestNote || '').trim() || '입력된 요청사항이 없습니다.';
+      }
+
+      function printPdf(){
+        const originalFloor = state.floor;
+        const originalViewBox = svg.getAttribute('viewBox') || '0 560 1688 2204';
+        const printArea = root.querySelector('#th-print-area');
+        printArea.innerHTML = '';
+
+        /* 현재 탭이 배치도/음주류/요청사항 어디든 항상 전체 출력 */
+        printArea.appendChild(makePrintPage('GARDEN', 'garden', '80 600 1520 2140'));
+        printArea.appendChild(makePrintPage('1ST FLOOR', 'first', '70 730 1580 1660'));
+        printArea.appendChild(makePrintPage('TERRACE & 2ND FLOOR', 'terrace', '80 650 1560 1780'));
+        printArea.appendChild(makeTextPrintPage('음주류', getDrinksPrintText()));
+        printArea.appendChild(makeTextPrintPage('요청사항', getRequestPrintText()));
+
+        state.floor = originalFloor;
+        renderAll();
+        svg.setAttribute('viewBox', originalViewBox);
+
+        window.addEventListener('afterprint', function(){printArea.innerHTML = '';}, {once:true});
+        setTimeout(function(){window.print();}, 100);
+      }
+
+      root.querySelectorAll('[data-floor]').forEach(btn => {
+        btn.addEventListener('click',() => {
+          state.floor = btn.dataset.floor;
+          renderAll();
+        });
+      });
+
+
+      function rotateSelectedSquareTable(){
+        const table = state.garden.tables.find(t => t.id === state.garden.selectedId);
+        if(!table || table.shape !== 'square'){
+          showNotice('회전할 사각 테이블을 선택하세요.');
+          return;
+        }
+        table.rotation = ((Number(table.rotation || 0) + 90) % 360);
+        renderGardenTables();
+        renderSummary();
+      }
+
+      root.addEventListener('keydown', e => {
+        const tag = (e.target && e.target.tagName ? e.target.tagName : '').toLowerCase();
+        const isTyping =
+          tag === 'input' ||
+          tag === 'textarea' ||
+          tag === 'select' ||
+          (e.target && e.target.isContentEditable);
+
+        /* 입력창/요청사항 작성 중에는 R키 회전 단축키를 무시 */
+        if(isTyping) return;
+
+        /* 배치도 화면에서만 R키 회전 단축키 작동 */
+        if(state.floor !== 'garden') return;
+
+        if((e.key || '').toLowerCase() === 'r') rotateSelectedSquareTable();
+      });
+
+      root.querySelectorAll('[data-shape]').forEach(btn => {
+        btn.addEventListener('click',() => {
+          state.garden.shape = btn.dataset.shape;
+          root.querySelectorAll('[data-shape]').forEach(b => {
+            b.classList.toggle('is-active',b.dataset.shape === state.garden.shape);
+          });
+
+          if(shouldAutoSelectAllSeats()){
+            autoPlaceGardenTables();
+            renderAll();
+          }else{
+            renderSummary();
+          }
+        });
+      });
+
+      root.querySelector('#th-road-select').addEventListener('change',e => {
+        state.garden.road = e.target.value;
+        if(shouldAutoSelectAllSeats()) autoPlaceGardenTables();
+        renderAll();
+      });
+
+      root.querySelector('#th-clear-garden').addEventListener('click',() => {
+        state.garden.tables = [];
+        state.garden.selectedId = null;
+        state.garden.nextId = 1;
+        renderAll();
+      });
+
+
+      root.querySelectorAll('[data-welcome-enabled]').forEach(btn => {
+        btn.addEventListener('click',() => {
+          state.drinks.welcome.enabled = btn.dataset.welcomeEnabled === 'true';
+          renderDrinkControls();
+          renderSummary();
+        });
+      });
+
+      root.querySelectorAll('[data-welcome-package]').forEach(btn => {
+        btn.addEventListener('click',() => {
+          state.drinks.welcome.package = btn.dataset.welcomePackage || '';
+          if(state.drinks.welcome.package) state.drinks.welcome.enabled = true;
+          renderDrinkControls();
+          renderSummary();
+        });
+      });
+
+      root.querySelectorAll('[data-welcome-type]').forEach(btn => {
+        btn.addEventListener('click',() => {
+          state.drinks.welcome.type = btn.dataset.welcomeType || '';
+          if(state.drinks.welcome.type) state.drinks.welcome.enabled = true;
+          renderDrinkControls();
+          renderSummary();
+        });
+      });
+
+      const requestNoteInput = root.querySelector('#th-request-note');
+      if(requestNoteInput){
+        requestNoteInput.addEventListener('input',() => {
+          state.requestNote = requestNoteInput.value || '';
+          renderSummary();
+        });
+      }
+
+      root.querySelector('#th-print-pdf').addEventListener('click',printPdf);
+
+      sessionButtons.forEach(btn => {
+        btn.addEventListener('click',() => {
+          state.event.session = btn.dataset.session || 'lunch';
+          sessionButtons.forEach(b => {
+            b.classList.toggle('is-active',b.dataset.session === state.event.session);
+          });
+          renderSummary();
+        });
+      });
+
+      if(eventDateInput) eventDateInput.addEventListener('change',renderSummary);
+      if(groomNameInput) groomNameInput.addEventListener('input',renderSummary);
+      if(brideNameInput) brideNameInput.addEventListener('input',renderSummary);
+      if(mealCountInput) mealCountInput.addEventListener('input',() => {
+        if(autoSelectAllSeatsByMealCount()) renderAll();
+        else{
+          renderSummary();
+          if(isCurrentSeatCountOverLimit()) showSeatLimitNotice();
+        }
+      });
+
+      svg.addEventListener('click',e => {
+        if(state.floor !== 'garden') return;
+        if(suppressNextClick){
+          suppressNextClick = false;
+          return;
+        }
+        if(e.target.closest && e.target.closest('.garden-table')) return;
+        const p = svgPoint(e.clientX,e.clientY);
+        if(p.x < 210 || p.x > 1495 || p.y < 740 || p.y > 2355) return;
+        addGardenTable(p.x,p.y);
+      });
+
+      svg.addEventListener('pointermove',e => {
+        if(rotateDrag){
+          const table = state.garden.tables.find(t => t.id === rotateDrag.id);
+          if(!table) return;
+          const p = svgPoint(e.clientX,e.clientY);
+          const currentPointerAngle = Math.atan2(p.y - table.y, p.x - table.x) * 180 / Math.PI;
+          let nextRotation = rotateDrag.startRotation + (currentPointerAngle - rotateDrag.startPointerAngle);
+          nextRotation = ((nextRotation % 360) + 360) % 360;
+          table.rotation = Math.round(nextRotation * 10) / 10;
+          rotateDrag.moved = true;
+          renderGardenTables();
+          return;
+        }
+
+        if(!drag) return;
+        const table = state.garden.tables.find(t => t.id === drag.id);
+        if(!table) return;
+        const p = svgPoint(e.clientX,e.clientY);
+        if(Math.abs(p.x-drag.startX)>3 || Math.abs(p.y-drag.startY)>3) drag.moved = true;
+        table.x = clamp(p.x - drag.dx,300,1405);
+        table.y = clamp(p.y - drag.dy,840,2240);
+        const g = svg.querySelector(`.garden-table[data-id="${table.id}"]`);
+        if(g) g.setAttribute('transform',`translate(${table.x} ${table.y})`);
+      });
+
+      svg.addEventListener('pointerup',e => {
+        if(rotateDrag){
+          if(rotateDrag.moved) suppressNextClick = true;
+          rotateDrag = null;
+          try{svg.releasePointerCapture(e.pointerId);}catch(err){}
+          renderSummary();
+          return;
+        }
+        if(drag && drag.moved) suppressNextClick = true;
+        drag = null;
+        try{svg.releasePointerCapture(e.pointerId);}catch(err){}
+        renderSummary();
+      });
+
+      svg.addEventListener('pointercancel',() => {drag=null; rotateDrag=null;});
+
+      const exportDrinkImagesBtn = root.querySelector('#th-export-drink-images');
+      if(exportDrinkImagesBtn) exportDrinkImagesBtn.addEventListener('click', exportDrinkImageMap);
+
+      autoSelectAllSeatsByMealCount();
+      renderDrinkItems();
+      renderAll();
+
+      loadRemoteDrinkImageMap().then(() => {
+        renderDrinkItems();
+        initFirebaseRealtimeDrinkImages();
+      });
+    })();
+  </script>
+</div>
+
+<script>
+  (function(){
+    const params = new URLSearchParams(location.search);
+    const IS_ADMIN = params.get("admin") === "1";
+    document.body.classList.add(IS_ADMIN ? "admin-mode" : "customer-mode");
+    const modeDot = document.getElementById("modeDot");
+    const modeLabel = document.getElementById("modeLabel");
+    if(modeDot) modeDot.classList.add(IS_ADMIN ? "admin" : "customer");
+    if(modeLabel) modeLabel.textContent = IS_ADMIN ? "admin mode" : "customer mode";
+  })();
+</script>
+</body>
+</html>
