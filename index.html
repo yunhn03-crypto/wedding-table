@@ -148,7 +148,7 @@
     #th-layout-planner-svg select{height:39px;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--text);font-size:14px;}
     #th-layout-planner-svg .th-small-btn{padding:9px 12px;font-size:13px;}
     #th-layout-planner-svg .th-danger{color:var(--danger);border-color:rgba(200,30,30,.25);}
-    #th-layout-planner-svg .stage{width:100%;background:#fff;overflow:hidden;touch-action:none;}
+    #th-layout-planner-svg .stage{width:100%;background:#fff;overflow:hidden;touch-action:pan-y;}
     #th-layout-planner-svg svg{display:block;width:100%;height:auto;background:#fff;}
 
     #th-layout-planner-svg .wall{fill:none;stroke:#211817;stroke-width:10;stroke-linecap:square;stroke-linejoin:miter;}
@@ -1025,6 +1025,8 @@
         canvas.className = 'th-drink-canvas';
         if(src){
           const img = document.createElement('img');
+          img.loading = 'lazy';
+          img.decoding = 'async';
           img.src = src;
           img.alt = item.name;
           canvas.appendChild(img);
