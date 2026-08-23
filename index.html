@@ -4,6 +4,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>TILTED HANNAM | event layout &amp; order</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     :root{
       --bg:#ffffff;
@@ -18,7 +21,7 @@
     *{ box-sizing:border-box; }
     body{
       margin:0;
-      font-family: system-ui,-apple-system,Segoe UI,Roboto,Pretendard,Apple SD Gothic Neo,Noto Sans KR,sans-serif;
+      font-family: "Noto Sans KR",system-ui,-apple-system,Segoe UI,Roboto,Pretendard,Apple SD Gothic Neo,sans-serif;
       color:var(--fg);
       background:linear-gradient(180deg,#fff, #fbfbfb);
     }
@@ -90,7 +93,7 @@
       --shadow:0 8px 24px rgba(0,0,0,.06);
       width:100%;
       color:var(--text);
-      font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+      font-family:"Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif;
       word-break:keep-all;
     }
 
@@ -292,10 +295,10 @@
       }
 
       #th-layout-planner-svg .print-page:last-child{page-break-after:auto;break-after:auto;}
-      #th-layout-planner-svg .print-page-title{margin:0 0 3mm;font-size:18px;font-weight:900;text-align:center;color:#111;font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;}
-      #th-layout-planner-svg .print-page-meta{margin:0 0 4mm;font-size:13px;font-weight:700;text-align:center;color:#111;font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;}
+      #th-layout-planner-svg .print-page-title{margin:0 0 3mm;font-size:18px;font-weight:900;text-align:center;color:#111;font-family:"Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif;}
+      #th-layout-planner-svg .print-page-meta{margin:0 0 4mm;font-size:13px;font-weight:700;text-align:center;color:#111;font-family:"Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif;}
       #th-layout-planner-svg .print-page svg{width:auto;height:auto;max-width:100%;max-height:175mm;background:#fff;overflow:visible;}
-      #th-layout-planner-svg .print-page-footer{width:100%;margin-top:4mm;padding-top:3mm;border-top:1px solid #111;font-size:14px;font-weight:900;text-align:center;color:#111;font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;}
+      #th-layout-planner-svg .print-page-footer{width:100%;margin-top:4mm;padding-top:3mm;border-top:1px solid #111;font-size:14px;font-weight:900;text-align:center;color:#111;font-family:"Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif;}
       #th-layout-planner-svg .print-page,
       #th-layout-planner-svg .print-page *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
       #th-layout-planner-svg #th-print-area .rotate-handle{display:none !important;}
@@ -315,7 +318,7 @@
         line-height:1.75;
         white-space:pre-wrap;
         color:#111;
-        font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+        font-family:"Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif;
         overflow:hidden;
       }
     }
@@ -507,7 +510,7 @@
       function clearSvg(){
         svg.innerHTML = '';
         const defs = el('defs', {}, svg);
-        const marker = el('marker', {id:'th-svg-arrow', markerWidth:'18', markerHeight:'18', refX:'15', refY:'9', orient:'auto'}, defs);
+        const marker = el('marker', {id:'th-svg-arrow', markerWidth:'18', markerHeight:'18', markerUnits:'userSpaceOnUse', refX:'15', refY:'9', orient:'auto'}, defs);
         el('path', {d:'M2,2 L16,9 L2,16 Z', fill:'#111'}, marker);
       }
 
