@@ -258,22 +258,26 @@
 
     @media print{
       @page{size:A4 portrait;margin:8mm;}
+      html, body{margin:0 !important;padding:0 !important;}
+      header{display:none !important;}
       body *{visibility:hidden !important;}
 
       #th-layout-planner-svg #th-print-area,
       #th-layout-planner-svg #th-print-area *{visibility:visible !important;}
 
+      #th-layout-planner-svg{position:static !important;}
+
       #th-layout-planner-svg #th-print-area{
         display:block !important;
-        position:absolute;
+        position:fixed;
         left:0;
         top:0;
-        width:100%;
+        width:calc(210mm - 16mm);
         background:#fff;
       }
 
       #th-layout-planner-svg .print-page{
-        width:100%;
+        width:calc(210mm - 16mm);
         height:calc(297mm - 16mm);
         page-break-after:always;
         break-after:page;
