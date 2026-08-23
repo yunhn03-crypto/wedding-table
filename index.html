@@ -1539,7 +1539,19 @@
         svg.setAttribute('viewBox', originalViewBox);
 
         window.addEventListener('afterprint', function(){printArea.innerHTML = '';}, {once:true});
-        setTimeout(function(){window.print();}, 100);
+
+        /* 구글 폰트(Noto Sans KR)가 인쇄 시점까지 로드되지 않으면 대체 폰트로 레이아웃이 계산됐다가
+           폰트 교체 후 줄바꿈/높이가 달라져 인쇄물이 미묘하게 밀릴 수 있음 -> 폰트 로드 완료를 기다림 */
+        let printed = false;
+        const doPrint = function(){
+          if(printed) return;
+          printed = true;
+          window.print();
+        };
+        if(document.fonts && document.fonts.ready){
+          document.fonts.ready.then(function(){ setTimeout(doPrint, 50); }).catch(function(){ setTimeout(doPrint, 100); });
+        }
+        setTimeout(doPrint, 1500);
       }
 
       root.querySelectorAll('[data-floor]').forEach(btn => {
