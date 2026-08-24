@@ -260,7 +260,7 @@
     }
 
     @media print{
-      @page{size:A4 portrait;margin:8mm;}
+      @page{size:A4 portrait;margin:14mm;}
       html, body{margin:0 !important;padding:0 !important;}
       header{display:none !important;}
       body *{visibility:hidden !important;}
@@ -275,13 +275,13 @@
         position:absolute;
         left:0;
         top:0;
-        width:calc(210mm - 16mm);
+        width:calc(210mm - 28mm);
         background:#fff;
       }
 
       #th-layout-planner-svg .print-page{
-        width:calc(210mm - 16mm);
-        height:calc(297mm - 16mm);
+        width:calc(210mm - 28mm);
+        height:calc(297mm - 28mm);
         page-break-after:always;
         break-after:page;
         page-break-inside:avoid;
@@ -297,7 +297,7 @@
       #th-layout-planner-svg .print-page:last-child{page-break-after:auto;break-after:auto;}
       #th-layout-planner-svg .print-page-title{margin:0 0 3mm;font-size:18px;font-weight:900;text-align:center;color:#111;font-family:"Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif;}
       #th-layout-planner-svg .print-page-meta{margin:0 0 4mm;font-size:13px;font-weight:700;text-align:center;color:#111;font-family:"Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif;}
-      #th-layout-planner-svg .print-page svg{width:auto;height:auto;max-width:100%;max-height:235mm;background:#fff;overflow:visible;}
+      #th-layout-planner-svg .print-page svg{width:auto;height:auto;max-width:100%;max-height:190mm;background:#fff;overflow:visible;}
       #th-layout-planner-svg .print-page-footer{width:100%;margin-top:4mm;padding-top:3mm;border-top:1px solid #111;font-size:14px;font-weight:900;text-align:center;color:#111;font-family:"Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif;}
       #th-layout-planner-svg .print-page,
       #th-layout-planner-svg .print-page *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
