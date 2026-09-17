@@ -215,6 +215,9 @@
     #th-layout-planner-svg .th-drink-canvas{position:relative;width:100%;aspect-ratio:1/1;background:var(--soft);overflow:hidden;}
     #th-layout-planner-svg .th-drink-canvas img{width:100%;height:100%;object-fit:cover;display:block;}
     #th-layout-planner-svg .th-drink-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;text-align:center;padding:8px;}
+    #th-layout-planner-svg .th-drink-item.is-soldout .th-drink-canvas img{filter:grayscale(1);opacity:.55;}
+    #th-layout-planner-svg .th-soldout-badge{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45);color:#fff;font-weight:900;font-size:14px;letter-spacing:.4px;}
+    #th-layout-planner-svg .th-drink-item.is-soldout .th-drink-qty{background:var(--soft);color:var(--muted);cursor:not-allowed;}
     #th-layout-planner-svg .th-drink-info{display:grid;grid-template-columns:minmax(0,1fr) 92px;gap:10px;align-items:center;padding:10px;}
     #th-layout-planner-svg .th-drink-name{font-weight:800;font-size:13px;line-height:1.35;}
     #th-layout-planner-svg .th-drink-meta{display:block;margin-top:3px;color:var(--muted);font-size:12px;font-weight:600;}
@@ -809,10 +812,10 @@
         {key:'laVieilleFermeRouge', name:'VENTOUX ROUGE FAMILLE PERRIN', label:'벙뚜 루즈 파미유 페랑', unit:'5.5', group:'wine'},
         {key:'luberonBlanc', name:'LUBERON BLANC FAMILLE PERRIN', label:'루베롱 블랑 / 파미유 페랑', unit:'5.5', group:'wine'},
         {key:'cavaBrut', name:'MONASTERIOLO CAVA BRUT', label:'모나스테리올로 까바 브뤼', unit:'5.5', group:'wine'},
-        {key:'laVieilleFermeRose', name:'LA VIEILLE FERME ROSE', label:'라 비에이 페름 로제', unit:'5.5', group:'wine'},
+        {key:'laVieilleFermeRose', name:'LA VIEILLE FERME ROSE', label:'라 비에이 페름 로제', unit:'5.5', group:'wine', soldOut:true},
         {key:'moscatoSpumante', name:'MOSCATO SPUMANTE GOLD LABEL', label:'모스카토 스푸만테 골드라벨 / 룽가로티', unit:'5.5', group:'wine'},
         {key:'ayalaBrutMajeur', name:'BRUT MAJEUR NV AYALA', label:'브뤼 마저 NV / 아얄라', unit:'24.5', group:'wine'},
-        {key:'somersbyApple', name:'Somersby Apple', label:'써머스비 애플', unit:'0.8', group:'canBottle'},
+        {key:'somersbyApple', name:'Somersby Apple', label:'써머스비 애플', unit:'0.8', group:'canBottle', soldOut:true},
         {key:'stellaArtois', name:'Stella Artois', label:'스텔라 아르투아', unit:'0.8', group:'canBottle'},
         {key:'budweiser', name:'Budweiser', label:'버드와이저', unit:'0.8', group:'canBottle'},
         {key:'kgbVodkaLemon', name:'KGB Vodka Lemon', label:'KGB 보드카 레몬', unit:'0.8', group:'canBottle'},
@@ -1026,7 +1029,7 @@
         const src = normalizeDisplayImageUrl(imageMap[item.key] || '');
 
         const card = document.createElement('div');
-        card.className = 'th-drink-item';
+        card.className = 'th-drink-item' + (item.soldOut ? ' is-soldout' : '');
 
         const canvas = document.createElement('div');
         canvas.className = 'th-drink-canvas';
@@ -1043,6 +1046,12 @@
           ph.textContent = '이미지 없음';
           canvas.appendChild(ph);
         }
+        if(item.soldOut){
+          const badge = document.createElement('div');
+          badge.className = 'th-soldout-badge';
+          badge.textContent = '일시 품절';
+          canvas.appendChild(badge);
+        }
 
         const info = document.createElement('label');
         info.className = 'th-drink-info';
@@ -1056,8 +1065,12 @@
         qtyInput.type = 'number';
         qtyInput.min = '0';
         qtyInput.step = '1';
-        qtyInput.placeholder = '0';
+        qtyInput.placeholder = item.soldOut ? '품절' : '0';
         qtyInput.dataset.drinkQty = item.key;
+        if(item.soldOut){
+          qtyInput.disabled = true;
+          delete state.drinks.items[item.key];
+        }
         qtyInput.addEventListener('input', () => {
           const value = Math.max(0, Math.floor(Number(qtyInput.value || 0)));
           if(value > 0) state.drinks.items[item.key] = value;
