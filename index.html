@@ -240,7 +240,8 @@
     #th-layout-planner-svg .th-cer-table td.th-cer-del{padding:6px;text-align:center;vertical-align:middle;white-space:nowrap;}
     #th-layout-planner-svg .th-cer-table td.th-cer-del button{width:32px;height:32px;padding:0;font-size:14px;line-height:1;}
     #th-layout-planner-svg .th-cer-table td.th-cer-del button + button{margin-left:4px;}
-    #th-layout-planner-svg .th-cer-people-label{width:52px;}
+    #th-layout-planner-svg .th-cer-people-label{width:92px;}
+    #th-layout-planner-svg .th-cer-role-select{width:92px;}
     #th-layout-planner-svg .th-cer-icon-btn{width:34px;height:34px;padding:0;font-size:16px;line-height:1;}
     #th-layout-planner-svg .th-request-textarea{width:100%;min-height:360px;border:1px solid var(--line);border-radius:14px;padding:14px;font:inherit;font-size:14px;line-height:1.6;resize:vertical;background:#fff;}
     #th-layout-planner-svg .th-mini-summary{margin-top:12px;border:1px dashed var(--line);border-radius:12px;padding:10px;color:var(--muted);font-size:13px;line-height:1.6;background:var(--soft);}
@@ -489,8 +490,7 @@
                 <input type="text" class="th-event-input person" data-person="host" data-field="name" placeholder="이름">
                 <input type="tel" class="th-event-input person" data-person="host" data-field="tel" placeholder="연락처">
               </div>
-              <div id="th-cer-speech-list"></div>
-              <div id="th-cer-song-list"></div>
+              <div id="th-cer-others-list"></div>
             </div>
           </div>
         </div>
@@ -543,8 +543,7 @@
         ceremonyRows:[{order:'',items:'',setting:'',autoItems:'',autoSetting:''}],
         ceremonyPeople:{
           host:{name:'',tel:''},
-          speech:[{name:'',tel:''}],
-          song:[{name:'',tel:''}]
+          others:[{role:'축사자',name:'',tel:''}, {role:'축가자',name:'',tel:''}]
         }
       };
 
@@ -880,11 +879,7 @@
         {keys:['축가'], items:['보면대', '마이크'], setting:[]}
       ];
 
-      const CEREMONY_PEOPLE = [
-        {key:'host', label:'사회자'},
-        {key:'speech', label:'축사자'},
-        {key:'song', label:'축가자'}
-      ];
+      const CEREMONY_ROLES = ['축사자', '축가자', '축시자', '축도', '축무자'];
 
       const DRINK_CATALOG = [
         {key:'laVieilleFermeRouge', name:'VENTOUX ROUGE FAMILLE PERRIN', label:'벙뚜 루즈 파미유 페랑', unit:'5.5', group:'wine'},
@@ -1764,29 +1759,37 @@
       }
 
       function getCeremonyPeople(){
-        const list = [];
-        CEREMONY_PEOPLE.forEach(p => {
-          const entries = [].concat(state.ceremonyPeople[p.key]);
-          entries.forEach(e => list.push({label:p.label, name:e.name.trim(), tel:e.tel.trim()}));
-        });
+        const list = [{label:'사회자', name:state.ceremonyPeople.host.name.trim(), tel:state.ceremonyPeople.host.tel.trim()}];
+        state.ceremonyPeople.others.forEach(e => list.push({label:e.role, name:e.name.trim(), tel:e.tel.trim()}));
         return list.filter(p => p.name || p.tel);
       }
 
-      /* 축사자/축가자는 여러 명 입력 가능: 각 줄에 −, 마지막 줄에만 + */
-      function renderCeremonyPeopleList(key){
-        const wrap = root.querySelector('#th-cer-' + key + '-list');
+      /* 사회자 외 담당자: 역할(축사자/축가자/축시자/축도/축무자)을 드롭박스로 고르고,
+         각 줄에 −, 마지막 줄에만 + */
+      function renderCeremonyPeopleList(){
+        const wrap = root.querySelector('#th-cer-others-list');
         if(!wrap) return;
-        const label = CEREMONY_PEOPLE.find(p => p.key === key).label;
-        const entries = state.ceremonyPeople[key];
+        const entries = state.ceremonyPeople.others;
         wrap.innerHTML = '';
         entries.forEach((entry, idx) => {
           const rowEl = document.createElement('div');
           rowEl.className = 'th-toolbar-row th-cer-person-row';
 
-          const lab = document.createElement('span');
-          lab.className = 'th-label th-cer-people-label';
-          lab.textContent = label;
-          rowEl.appendChild(lab);
+          const sel = document.createElement('select');
+          sel.className = 'th-cer-role-select';
+          sel.setAttribute('aria-label', '담당 역할');
+          CEREMONY_ROLES.forEach(role => {
+            const opt = document.createElement('option');
+            opt.value = role;
+            opt.textContent = role;
+            sel.appendChild(opt);
+          });
+          sel.value = entry.role;
+          sel.addEventListener('change', () => {
+            entry.role = sel.value;
+            renderSummary();
+          });
+          rowEl.appendChild(sel);
 
           [['name','text','이름'],['tel','tel','연락처']].forEach(([field, type, ph]) => {
             const input = document.createElement('input');
@@ -1805,11 +1808,11 @@
           minus.type = 'button';
           minus.className = 'th-small-btn th-cer-icon-btn';
           minus.textContent = '−';
-          minus.setAttribute('aria-label', label + ' 삭제');
+          minus.setAttribute('aria-label', '담당자 삭제');
           minus.addEventListener('click', () => {
             entries.splice(idx, 1);
-            if(!entries.length) entries.push({name:'',tel:''});
-            renderCeremonyPeopleList(key);
+            if(!entries.length) entries.push({role:CEREMONY_ROLES[0],name:'',tel:''});
+            renderCeremonyPeopleList();
             renderSummary();
           });
           rowEl.appendChild(minus);
@@ -1819,10 +1822,10 @@
             plus.type = 'button';
             plus.className = 'th-small-btn th-cer-icon-btn';
             plus.textContent = '+';
-            plus.setAttribute('aria-label', label + ' 추가');
+            plus.setAttribute('aria-label', '담당자 추가');
             plus.addEventListener('click', () => {
-              entries.push({name:'',tel:''});
-              renderCeremonyPeopleList(key);
+              entries.push({role:CEREMONY_ROLES[0],name:'',tel:''});
+              renderCeremonyPeopleList();
               renderSummary();
             });
             rowEl.appendChild(plus);
@@ -2025,8 +2028,7 @@
         });
       });
       renderCeremonyRows();
-      renderCeremonyPeopleList('speech');
-      renderCeremonyPeopleList('song');
+      renderCeremonyPeopleList();
 
       root.querySelector('#th-print-pdf').addEventListener('click',printPdf);
 
