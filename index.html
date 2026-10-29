@@ -340,6 +340,7 @@
       <button type="button" data-floor="terrace">TERRACE &amp; 2ND FLOOR</button>
       <button type="button" data-floor="drinks">음주류</button>
       <button type="button" data-floor="request">요청사항</button>
+      <button type="button" data-floor="ceremony">식순</button>
     </div>
 
     <div class="th-grid">
@@ -435,6 +436,17 @@
 2부 케이크 커팅시 커팅칼 준비해 주세요.
 애프터시 배달 음식 오후7시 30분 도착 예정이에요. 음식 수령 및 세팅 부탁드려요."></textarea>
           </div>
+
+          <div id="th-ceremony-panel" class="th-extra-panel" aria-label="식순">
+            <h3 class="th-extra-title">식순</h3>
+            <textarea id="th-ceremony-note" class="th-request-textarea" placeholder="예시.
+12:00 하객 입장
+12:30 화촉점화
+12:35 신랑 신부 입장
+12:40 주례 / 혼인서약
+13:00 케이크 커팅
+13:10 식사"></textarea>
+          </div>
         </div>
       </div>
 
@@ -448,6 +460,7 @@
           <li>Garden 테이블을 한 번 클릭하면 삭제됩니다. 사각 테이블은 ↻ 버튼을 마우스로 드래그해 원하는 각도로 회전합니다.</li>
           <li>음주류 버튼에서 웰컴드링크, 주류, 음료 수량을 선택합니다. (해당 음료가 업체 사정으로 품절일 경우 다른 음료로 대체될 수 있습니다.)</li>
           <li>요청사항 버튼에서 추가 요청사항을 입력합니다.</li>
+          <li>식순 버튼에서 행사 진행 순서를 입력합니다.</li>
 
         </ol>
         <h3>선택 내역</h3>
@@ -480,7 +493,8 @@
           welcome:{enabled:false,package:'',type:''},
           items:{}
         },
-        requestNote:''
+        requestNote:'',
+        ceremonyNote:''
       };
 
       const roadMap = {
@@ -751,6 +765,8 @@
         const requestPanel = root.querySelector('#th-request-panel');
         if(drinksPanel) drinksPanel.classList.toggle('is-active', state.floor === 'drinks');
         if(requestPanel) requestPanel.classList.toggle('is-active', state.floor === 'request');
+        const ceremonyPanel = root.querySelector('#th-ceremony-panel');
+        if(ceremonyPanel) ceremonyPanel.classList.toggle('is-active', state.floor === 'ceremony');
 
         if(state.floor === 'garden'){
           drawGardenBase();
@@ -1385,6 +1401,8 @@
         });
         const requestNote = root.querySelector('#th-request-note');
         if(requestNote && document.activeElement !== requestNote) requestNote.value = state.requestNote || '';
+        const ceremonyNote = root.querySelector('#th-ceremony-note');
+        if(ceremonyNote && document.activeElement !== ceremonyNote) ceremonyNote.value = state.ceremonyNote || '';
 
         const mini = root.querySelector('#th-drinks-mini-summary');
         if(mini){
@@ -1427,7 +1445,10 @@
           ...(getSelectedDrinkLines().length ? getSelectedDrinkLines().map(line => '- ' + line) : ['- 선택 없음']),
           '',
           '[요청사항]',
-          '- ' + (state.requestNote || '-')
+          '- ' + (state.requestNote || '-'),
+          '',
+          '[식순]',
+          '- ' + (state.ceremonyNote || '-')
         ].join('\n');
       }
 
@@ -1527,6 +1548,10 @@
         return (state.requestNote || '').trim() || '입력된 요청사항이 없습니다.';
       }
 
+      function getCeremonyPrintText(){
+        return (state.ceremonyNote || '').trim() || '입력된 식순이 없습니다.';
+      }
+
       function printPdf(){
         const originalFloor = state.floor;
         const originalViewBox = svg.getAttribute('viewBox') || '0 560 1688 2204';
@@ -1539,6 +1564,7 @@
         printArea.appendChild(makePrintPage('TERRACE & 2ND FLOOR', 'terrace', '80 650 1560 1780'));
         printArea.appendChild(makeTextPrintPage('음주류', getDrinksPrintText()));
         printArea.appendChild(makeTextPrintPage('요청사항', getRequestPrintText()));
+        printArea.appendChild(makeTextPrintPage('식순', getCeremonyPrintText()));
 
         state.floor = originalFloor;
         renderAll();
@@ -1656,6 +1682,14 @@
       if(requestNoteInput){
         requestNoteInput.addEventListener('input',() => {
           state.requestNote = requestNoteInput.value || '';
+          renderSummary();
+        });
+      }
+
+      const ceremonyNoteInput = root.querySelector('#th-ceremony-note');
+      if(ceremonyNoteInput){
+        ceremonyNoteInput.addEventListener('input',() => {
+          state.ceremonyNote = ceremonyNoteInput.value || '';
           renderSummary();
         });
       }
