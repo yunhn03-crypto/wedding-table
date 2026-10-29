@@ -225,13 +225,15 @@
     #th-layout-planner-svg .th-drink-tools{display:flex;flex-wrap:wrap;gap:6px;padding:0 10px 10px;}
     #th-layout-planner-svg .th-drink-tools input[type="text"]{flex:1 1 140px;height:34px;border:1px solid var(--line);border-radius:10px;padding:0 8px;font-size:12px;background:#fff;}
     #th-layout-planner-svg .th-drink-tools button{padding:7px 9px;font-size:11px;}
-    #th-layout-planner-svg .th-cer-table{width:100%;border-collapse:collapse;table-layout:fixed;margin-bottom:12px;}
+    #th-layout-planner-svg .th-cer-wrap{overflow-x:auto;margin-bottom:12px;}
+    #th-layout-planner-svg .th-cer-table{width:100%;min-width:560px;border-collapse:collapse;table-layout:fixed;}
     #th-layout-planner-svg .th-cer-table th{padding:8px;border:1px solid var(--line);background:var(--soft);font-size:13px;font-weight:800;text-align:center;}
     #th-layout-planner-svg .th-cer-table td{padding:0;border:1px solid var(--line);vertical-align:top;}
     #th-layout-planner-svg .th-cer-table textarea{display:block;width:100%;min-height:64px;border:0;padding:8px;font:inherit;font-size:13px;line-height:1.5;resize:vertical;background:#fff;}
-    #th-layout-planner-svg .th-cer-del-col{width:84px;}
+    #th-layout-planner-svg .th-cer-del-col{width:152px;}
+    #th-layout-planner-svg .th-cer-table td.th-cer-del button:disabled{opacity:.3;cursor:default;}
     #th-layout-planner-svg .th-cer-table td.th-cer-del{padding:6px;text-align:center;vertical-align:middle;white-space:nowrap;}
-    #th-layout-planner-svg .th-cer-table td.th-cer-del button{width:32px;height:32px;padding:0;font-size:16px;line-height:1;}
+    #th-layout-planner-svg .th-cer-table td.th-cer-del button{width:32px;height:32px;padding:0;font-size:14px;line-height:1;}
     #th-layout-planner-svg .th-cer-table td.th-cer-del button + button{margin-left:4px;}
     #th-layout-planner-svg .th-cer-people-label{width:52px;}
     #th-layout-planner-svg .th-cer-icon-btn{width:34px;height:34px;padding:0;font-size:16px;line-height:1;}
@@ -469,10 +471,12 @@
 
           <div id="th-ceremony-panel" class="th-extra-panel" aria-label="식순">
             <h3 class="th-extra-title">식순</h3>
-            <table class="th-cer-table">
-              <thead><tr><th>식순</th><th>준비물</th><th>틸티드 세팅</th><th class="th-cer-del-col"></th></tr></thead>
-              <tbody id="th-ceremony-body"></tbody>
-            </table>
+            <div class="th-cer-wrap">
+              <table class="th-cer-table">
+                <thead><tr><th>식순</th><th>준비물</th><th>틸티드 세팅</th><th class="th-cer-del-col"></th></tr></thead>
+                <tbody id="th-ceremony-body"></tbody>
+              </table>
+            </div>
             <div class="th-section-box th-cer-people">
               <h4 class="th-section-title">진행 담당</h4>
               <div class="th-toolbar-row">
@@ -1665,6 +1669,21 @@
 
           const actionTd = document.createElement('td');
           actionTd.className = 'th-cer-del';
+          [['▲','위로 이동',-1],['▼','아래로 이동',1]].forEach(([sym, aria, dir]) => {
+            const mv = document.createElement('button');
+            mv.type = 'button';
+            mv.textContent = sym;
+            mv.setAttribute('aria-label', aria);
+            const target = idx + dir;
+            if(target < 0 || target >= state.ceremonyRows.length) mv.disabled = true;
+            mv.addEventListener('click', () => {
+              const rows = state.ceremonyRows;
+              [rows[idx], rows[target]] = [rows[target], rows[idx]];
+              renderCeremonyRows();
+              renderSummary();
+            });
+            actionTd.appendChild(mv);
+          });
           const minus = document.createElement('button');
           minus.type = 'button';
           minus.textContent = '−';
