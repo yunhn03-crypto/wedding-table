@@ -225,6 +225,13 @@
     #th-layout-planner-svg .th-drink-tools{display:flex;flex-wrap:wrap;gap:6px;padding:0 10px 10px;}
     #th-layout-planner-svg .th-drink-tools input[type="text"]{flex:1 1 140px;height:34px;border:1px solid var(--line);border-radius:10px;padding:0 8px;font-size:12px;background:#fff;}
     #th-layout-planner-svg .th-drink-tools button{padding:7px 9px;font-size:11px;}
+    #th-layout-planner-svg .th-cer-table{width:100%;border-collapse:collapse;table-layout:fixed;margin-bottom:12px;}
+    #th-layout-planner-svg .th-cer-table th{padding:8px;border:1px solid var(--line);background:var(--soft);font-size:13px;font-weight:800;text-align:center;}
+    #th-layout-planner-svg .th-cer-table td{padding:0;border:1px solid var(--line);vertical-align:top;}
+    #th-layout-planner-svg .th-cer-table textarea{display:block;width:100%;min-height:64px;border:0;padding:8px;font:inherit;font-size:13px;line-height:1.5;resize:vertical;background:#fff;}
+    #th-layout-planner-svg .th-cer-del-col{width:54px;}
+    #th-layout-planner-svg .th-cer-table td.th-cer-del{padding:6px;text-align:center;vertical-align:middle;}
+    #th-layout-planner-svg .th-cer-table td.th-cer-del button{padding:6px 8px;font-size:12px;}
     #th-layout-planner-svg .th-request-textarea{width:100%;min-height:360px;border:1px solid var(--line);border-radius:14px;padding:14px;font:inherit;font-size:14px;line-height:1.6;resize:vertical;background:#fff;}
     #th-layout-planner-svg .th-mini-summary{margin-top:12px;border:1px dashed var(--line);border-radius:12px;padding:10px;color:var(--muted);font-size:13px;line-height:1.6;background:var(--soft);}
     @media (max-width:720px){
@@ -325,6 +332,25 @@
         font-family:"Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif;
         overflow:hidden;
       }
+      #th-layout-planner-svg .print-cer-table{
+        width:100%;
+        border-collapse:collapse;
+        table-layout:fixed;
+        font-size:13px;
+        line-height:1.6;
+        color:#111;
+        font-family:"Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif;
+      }
+      #th-layout-planner-svg .print-cer-table th,
+      #th-layout-planner-svg .print-cer-table td{
+        border:1px solid #111;
+        padding:3mm;
+        text-align:left;
+        vertical-align:top;
+        white-space:pre-wrap;
+        word-break:break-word;
+      }
+      #th-layout-planner-svg .print-cer-table th{font-weight:900;text-align:center;}
     }
   </style>
 
@@ -439,13 +465,11 @@
 
           <div id="th-ceremony-panel" class="th-extra-panel" aria-label="식순">
             <h3 class="th-extra-title">식순</h3>
-            <textarea id="th-ceremony-note" class="th-request-textarea" placeholder="예시.
-12:00 하객 입장
-12:30 화촉점화
-12:35 신랑 신부 입장
-12:40 주례 / 혼인서약
-13:00 케이크 커팅
-13:10 식사"></textarea>
+            <table class="th-cer-table">
+              <thead><tr><th>식순</th><th>준비물</th><th>틸티드 세팅</th><th class="th-cer-del-col"></th></tr></thead>
+              <tbody id="th-ceremony-body"></tbody>
+            </table>
+            <button type="button" class="th-small-btn" id="th-ceremony-add">+ 행 추가</button>
           </div>
         </div>
       </div>
@@ -494,7 +518,7 @@
           items:{}
         },
         requestNote:'',
-        ceremonyNote:''
+        ceremonyRows:[{order:'',items:'',setting:''}]
       };
 
       const roadMap = {
@@ -1401,8 +1425,6 @@
         });
         const requestNote = root.querySelector('#th-request-note');
         if(requestNote && document.activeElement !== requestNote) requestNote.value = state.requestNote || '';
-        const ceremonyNote = root.querySelector('#th-ceremony-note');
-        if(ceremonyNote && document.activeElement !== ceremonyNote) ceremonyNote.value = state.ceremonyNote || '';
 
         const mini = root.querySelector('#th-drinks-mini-summary');
         if(mini){
@@ -1448,7 +1470,9 @@
           '- ' + (state.requestNote || '-'),
           '',
           '[식순]',
-          '- ' + (state.ceremonyNote || '-')
+          ...(getCeremonyFilledRows().length
+            ? getCeremonyFilledRows().map(r => '- ' + (r.order || '-') + ' / ' + (r.items || '-') + ' / ' + (r.setting || '-'))
+            : ['- -'])
         ].join('\n');
       }
 
@@ -1548,8 +1572,90 @@
         return (state.requestNote || '').trim() || '입력된 요청사항이 없습니다.';
       }
 
-      function getCeremonyPrintText(){
-        return (state.ceremonyNote || '').trim() || '입력된 식순이 없습니다.';
+      function getCeremonyFilledRows(){
+        return state.ceremonyRows
+          .map(r => ({order:r.order.trim(), items:r.items.trim(), setting:r.setting.trim()}))
+          .filter(r => r.order || r.items || r.setting);
+      }
+
+      function renderCeremonyRows(){
+        const body = root.querySelector('#th-ceremony-body');
+        if(!body) return;
+        body.innerHTML = '';
+        state.ceremonyRows.forEach((row, idx) => {
+          const tr = document.createElement('tr');
+          ['order','items','setting'].forEach(key => {
+            const td = document.createElement('td');
+            const ta = document.createElement('textarea');
+            ta.value = row[key];
+            ta.addEventListener('input', () => {
+              row[key] = ta.value;
+              renderSummary();
+            });
+            td.appendChild(ta);
+            tr.appendChild(td);
+          });
+          const delTd = document.createElement('td');
+          delTd.className = 'th-cer-del';
+          const del = document.createElement('button');
+          del.type = 'button';
+          del.textContent = '삭제';
+          del.addEventListener('click', () => {
+            state.ceremonyRows.splice(idx, 1);
+            if(!state.ceremonyRows.length) state.ceremonyRows.push({order:'',items:'',setting:''});
+            renderCeremonyRows();
+            renderSummary();
+          });
+          delTd.appendChild(del);
+          tr.appendChild(delTd);
+          body.appendChild(tr);
+        });
+      }
+
+      function makeCeremonyPrintPage(){
+        const page = document.createElement('section');
+        page.className = 'print-page print-text-page';
+
+        const title = document.createElement('div');
+        title.className = 'print-page-title';
+        title.textContent = '식순';
+
+        const meta = document.createElement('div');
+        meta.className = 'print-page-meta';
+        meta.textContent = getPrintEventText();
+
+        const rows = getCeremonyFilledRows();
+        if(!rows.length){
+          const box = document.createElement('div');
+          box.className = 'print-info-box';
+          box.textContent = '입력된 식순이 없습니다.';
+          page.appendChild(title);
+          page.appendChild(meta);
+          page.appendChild(box);
+          return page;
+        }
+
+        const table = document.createElement('table');
+        table.className = 'print-cer-table';
+        const head = table.createTHead().insertRow();
+        ['식순','준비물','틸티드 세팅'].forEach(label => {
+          const th = document.createElement('th');
+          th.textContent = label;
+          head.appendChild(th);
+        });
+        const tbody = table.createTBody();
+        rows.forEach(r => {
+          const tr = tbody.insertRow();
+          [r.order, r.items, r.setting].forEach(text => {
+            const td = tr.insertCell();
+            td.textContent = text;
+          });
+        });
+
+        page.appendChild(title);
+        page.appendChild(meta);
+        page.appendChild(table);
+        return page;
       }
 
       function printPdf(){
@@ -1564,7 +1670,7 @@
         printArea.appendChild(makePrintPage('TERRACE & 2ND FLOOR', 'terrace', '80 650 1560 1780'));
         printArea.appendChild(makeTextPrintPage('음주류', getDrinksPrintText()));
         printArea.appendChild(makeTextPrintPage('요청사항', getRequestPrintText()));
-        printArea.appendChild(makeTextPrintPage('식순', getCeremonyPrintText()));
+        printArea.appendChild(makeCeremonyPrintPage());
 
         state.floor = originalFloor;
         renderAll();
@@ -1686,13 +1792,15 @@
         });
       }
 
-      const ceremonyNoteInput = root.querySelector('#th-ceremony-note');
-      if(ceremonyNoteInput){
-        ceremonyNoteInput.addEventListener('input',() => {
-          state.ceremonyNote = ceremonyNoteInput.value || '';
+      const ceremonyAddBtn = root.querySelector('#th-ceremony-add');
+      if(ceremonyAddBtn){
+        ceremonyAddBtn.addEventListener('click',() => {
+          state.ceremonyRows.push({order:'',items:'',setting:''});
+          renderCeremonyRows();
           renderSummary();
         });
       }
+      renderCeremonyRows();
 
       root.querySelector('#th-print-pdf').addEventListener('click',printPdf);
 
