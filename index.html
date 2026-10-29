@@ -229,9 +229,11 @@
     #th-layout-planner-svg .th-cer-table th{padding:8px;border:1px solid var(--line);background:var(--soft);font-size:13px;font-weight:800;text-align:center;}
     #th-layout-planner-svg .th-cer-table td{padding:0;border:1px solid var(--line);vertical-align:top;}
     #th-layout-planner-svg .th-cer-table textarea{display:block;width:100%;min-height:64px;border:0;padding:8px;font:inherit;font-size:13px;line-height:1.5;resize:vertical;background:#fff;}
-    #th-layout-planner-svg .th-cer-del-col{width:54px;}
-    #th-layout-planner-svg .th-cer-table td.th-cer-del{padding:6px;text-align:center;vertical-align:middle;}
-    #th-layout-planner-svg .th-cer-table td.th-cer-del button{padding:6px 8px;font-size:12px;}
+    #th-layout-planner-svg .th-cer-del-col{width:84px;}
+    #th-layout-planner-svg .th-cer-table td.th-cer-del{padding:6px;text-align:center;vertical-align:middle;white-space:nowrap;}
+    #th-layout-planner-svg .th-cer-table td.th-cer-del button{width:32px;height:32px;padding:0;font-size:16px;line-height:1;}
+    #th-layout-planner-svg .th-cer-table td.th-cer-del button + button{margin-left:4px;}
+    #th-layout-planner-svg .th-cer-people-label{width:52px;}
     #th-layout-planner-svg .th-request-textarea{width:100%;min-height:360px;border:1px solid var(--line);border-radius:14px;padding:14px;font:inherit;font-size:14px;line-height:1.6;resize:vertical;background:#fff;}
     #th-layout-planner-svg .th-mini-summary{margin-top:12px;border:1px dashed var(--line);border-radius:12px;padding:10px;color:var(--muted);font-size:13px;line-height:1.6;background:var(--soft);}
     @media (max-width:720px){
@@ -351,6 +353,7 @@
         word-break:break-word;
       }
       #th-layout-planner-svg .print-cer-table th{font-weight:900;text-align:center;}
+      #th-layout-planner-svg .print-cer-people{margin-top:8mm;}
     }
   </style>
 
@@ -469,7 +472,24 @@
               <thead><tr><th>식순</th><th>준비물</th><th>틸티드 세팅</th><th class="th-cer-del-col"></th></tr></thead>
               <tbody id="th-ceremony-body"></tbody>
             </table>
-            <button type="button" class="th-small-btn" id="th-ceremony-add">+ 행 추가</button>
+            <div class="th-section-box th-cer-people">
+              <h4 class="th-section-title">진행 담당</h4>
+              <div class="th-toolbar-row">
+                <span class="th-label th-cer-people-label">사회자</span>
+                <input type="text" class="th-event-input person" data-person="host" data-field="name" placeholder="이름">
+                <input type="tel" class="th-event-input person" data-person="host" data-field="tel" placeholder="연락처">
+              </div>
+              <div class="th-toolbar-row">
+                <span class="th-label th-cer-people-label">축사자</span>
+                <input type="text" class="th-event-input person" data-person="speech" data-field="name" placeholder="이름">
+                <input type="tel" class="th-event-input person" data-person="speech" data-field="tel" placeholder="연락처">
+              </div>
+              <div class="th-toolbar-row">
+                <span class="th-label th-cer-people-label">축가자</span>
+                <input type="text" class="th-event-input person" data-person="song" data-field="name" placeholder="이름">
+                <input type="tel" class="th-event-input person" data-person="song" data-field="tel" placeholder="연락처">
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -518,7 +538,12 @@
           items:{}
         },
         requestNote:'',
-        ceremonyRows:[{order:'',items:'',setting:''}]
+        ceremonyRows:[{order:'',items:'',setting:'',autoItems:'',autoSetting:''}],
+        ceremonyPeople:{
+          host:{name:'',tel:''},
+          speech:{name:'',tel:''},
+          song:{name:'',tel:''}
+        }
       };
 
       const roadMap = {
@@ -842,6 +867,22 @@
       const ALL_FIRST_IDS = ['1F_1','1F_2','1F_3','1F_4','1F_5','1F_6','1F_7','1F_8','1F_9','1F_10','1F_11','1F_12'];
       const ALL_TERRACE_IDS = ['T_1','T_2','T_3','T_4','T_5','T_6','T_7','Room_A1','Room_A2','Room_B1','Room_B2'];
       const AUTO_MEAL_COUNT = 216;
+
+      /* 식순 키워드 -> 준비물/틸티드 세팅 자동 입력 목록.
+         keys: 식순 칸에 이 글자가 들어가면(띄어쓰기 무시) 적용, items: 준비물, setting: 틸티드 세팅.
+         아래는 손글씨 스케치에서 읽은 단어로 만든 임시 목록이라 실제 운영 목록으로 교체/추가 필요. */
+      const CEREMONY_KEYWORDS = [
+        {keys:['성혼선언'], items:['성혼선언문'], setting:[]},
+        {keys:['반지'], items:['반지'], setting:[]},
+        {keys:['케이크'], items:['웨딩케이크', '케이크 컷팅 칼'], setting:[]},
+        {keys:['축가'], items:['보면대', '마이크'], setting:[]}
+      ];
+
+      const CEREMONY_PEOPLE = [
+        {key:'host', label:'사회자'},
+        {key:'speech', label:'축사자'},
+        {key:'song', label:'축가자'}
+      ];
 
       const DRINK_CATALOG = [
         {key:'laVieilleFermeRouge', name:'VENTOUX ROUGE FAMILLE PERRIN', label:'벙뚜 루즈 파미유 페랑', unit:'5.5', group:'wine'},
@@ -1472,7 +1513,8 @@
           '[식순]',
           ...(getCeremonyFilledRows().length
             ? getCeremonyFilledRows().map(r => '- ' + (r.order || '-') + ' / ' + (r.items || '-') + ' / ' + (r.setting || '-'))
-            : ['- -'])
+            : ['- -']),
+          ...getCeremonyPeople().map(p => '- ' + p.label + ': ' + (p.name || '-') + ' / ' + (p.tel || '-'))
         ].join('\n');
       }
 
@@ -1572,10 +1614,39 @@
         return (state.requestNote || '').trim() || '입력된 요청사항이 없습니다.';
       }
 
+      function newCeremonyRow(){
+        return {order:'',items:'',setting:'',autoItems:'',autoSetting:''};
+      }
+
       function getCeremonyFilledRows(){
         return state.ceremonyRows
           .map(r => ({order:r.order.trim(), items:r.items.trim(), setting:r.setting.trim()}))
           .filter(r => r.order || r.items || r.setting);
+      }
+
+      /* 식순 문구에 키워드가 있으면 준비물/틸티드 세팅을 자동 입력.
+         사용자가 직접 고친 칸(자동 입력값과 달라진 칸)은 덮어쓰지 않음. */
+      function autoFillCeremonyRow(row, itemsTa, settingTa){
+        const text = row.order.replace(/\s+/g, '');
+        const items = [];
+        const setting = [];
+        CEREMONY_KEYWORDS.forEach(entry => {
+          if(!entry.keys.some(k => text.includes(k))) return;
+          (entry.items || []).forEach(v => { if(!items.includes(v)) items.push(v); });
+          (entry.setting || []).forEach(v => { if(!setting.includes(v)) setting.push(v); });
+        });
+        const nextItems = items.join(', ');
+        const nextSetting = setting.join(', ');
+        if(row.items === row.autoItems){
+          row.items = nextItems;
+          itemsTa.value = nextItems;
+        }
+        if(row.setting === row.autoSetting){
+          row.setting = nextSetting;
+          settingTa.value = nextSetting;
+        }
+        row.autoItems = nextItems;
+        row.autoSetting = nextSetting;
       }
 
       function renderCeremonyRows(){
@@ -1584,32 +1655,55 @@
         body.innerHTML = '';
         state.ceremonyRows.forEach((row, idx) => {
           const tr = document.createElement('tr');
+          const tas = {};
           ['order','items','setting'].forEach(key => {
             const td = document.createElement('td');
             const ta = document.createElement('textarea');
             ta.value = row[key];
             ta.addEventListener('input', () => {
               row[key] = ta.value;
+              if(key === 'order') autoFillCeremonyRow(row, tas.items, tas.setting);
               renderSummary();
             });
+            tas[key] = ta;
             td.appendChild(ta);
             tr.appendChild(td);
           });
-          const delTd = document.createElement('td');
-          delTd.className = 'th-cer-del';
-          const del = document.createElement('button');
-          del.type = 'button';
-          del.textContent = '삭제';
-          del.addEventListener('click', () => {
+
+          const actionTd = document.createElement('td');
+          actionTd.className = 'th-cer-del';
+          const minus = document.createElement('button');
+          minus.type = 'button';
+          minus.textContent = '−';
+          minus.setAttribute('aria-label', '행 삭제');
+          minus.addEventListener('click', () => {
             state.ceremonyRows.splice(idx, 1);
-            if(!state.ceremonyRows.length) state.ceremonyRows.push({order:'',items:'',setting:''});
+            if(!state.ceremonyRows.length) state.ceremonyRows.push(newCeremonyRow());
             renderCeremonyRows();
             renderSummary();
           });
-          delTd.appendChild(del);
-          tr.appendChild(delTd);
+          actionTd.appendChild(minus);
+          if(idx === state.ceremonyRows.length - 1){
+            const plus = document.createElement('button');
+            plus.type = 'button';
+            plus.textContent = '+';
+            plus.setAttribute('aria-label', '행 추가');
+            plus.addEventListener('click', () => {
+              state.ceremonyRows.push(newCeremonyRow());
+              renderCeremonyRows();
+              renderSummary();
+            });
+            actionTd.appendChild(plus);
+          }
+          tr.appendChild(actionTd);
           body.appendChild(tr);
         });
+      }
+
+      function getCeremonyPeople(){
+        return CEREMONY_PEOPLE
+          .map(p => ({label:p.label, name:state.ceremonyPeople[p.key].name.trim(), tel:state.ceremonyPeople[p.key].tel.trim()}))
+          .filter(p => p.name || p.tel);
       }
 
       function makeCeremonyPrintPage(){
@@ -1624,37 +1718,44 @@
         meta.className = 'print-page-meta';
         meta.textContent = getPrintEventText();
 
-        const rows = getCeremonyFilledRows();
-        if(!rows.length){
-          const box = document.createElement('div');
-          box.className = 'print-info-box';
-          box.textContent = '입력된 식순이 없습니다.';
-          page.appendChild(title);
-          page.appendChild(meta);
-          page.appendChild(box);
-          return page;
-        }
-
-        const table = document.createElement('table');
-        table.className = 'print-cer-table';
-        const head = table.createTHead().insertRow();
-        ['식순','준비물','틸티드 세팅'].forEach(label => {
-          const th = document.createElement('th');
-          th.textContent = label;
-          head.appendChild(th);
-        });
-        const tbody = table.createTBody();
-        rows.forEach(r => {
-          const tr = tbody.insertRow();
-          [r.order, r.items, r.setting].forEach(text => {
-            const td = tr.insertCell();
-            td.textContent = text;
+        function buildTable(labels, dataRows){
+          const table = document.createElement('table');
+          table.className = 'print-cer-table';
+          const head = table.createTHead().insertRow();
+          labels.forEach(label => {
+            const th = document.createElement('th');
+            th.textContent = label;
+            head.appendChild(th);
           });
-        });
+          const tbody = table.createTBody();
+          dataRows.forEach(cells => {
+            const tr = tbody.insertRow();
+            cells.forEach(text => { tr.insertCell().textContent = text; });
+          });
+          return table;
+        }
 
         page.appendChild(title);
         page.appendChild(meta);
-        page.appendChild(table);
+
+        const rows = getCeremonyFilledRows();
+        if(rows.length){
+          page.appendChild(buildTable(['식순','준비물','틸티드 세팅'], rows.map(r => [r.order, r.items, r.setting])));
+        }
+
+        const people = getCeremonyPeople();
+        if(people.length){
+          const peopleTable = buildTable(['구분','이름','연락처'], people.map(p => [p.label, p.name, p.tel]));
+          peopleTable.classList.add('print-cer-people');
+          page.appendChild(peopleTable);
+        }
+
+        if(!rows.length && !people.length){
+          const box = document.createElement('div');
+          box.className = 'print-info-box';
+          box.textContent = '입력된 식순이 없습니다.';
+          page.appendChild(box);
+        }
         return page;
       }
 
@@ -1792,14 +1893,12 @@
         });
       }
 
-      const ceremonyAddBtn = root.querySelector('#th-ceremony-add');
-      if(ceremonyAddBtn){
-        ceremonyAddBtn.addEventListener('click',() => {
-          state.ceremonyRows.push({order:'',items:'',setting:''});
-          renderCeremonyRows();
+      root.querySelectorAll('[data-person]').forEach(input => {
+        input.addEventListener('input',() => {
+          state.ceremonyPeople[input.dataset.person][input.dataset.field] = input.value;
           renderSummary();
         });
-      }
+      });
       renderCeremonyRows();
 
       root.querySelector('#th-print-pdf').addEventListener('click',printPdf);
