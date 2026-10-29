@@ -230,8 +230,13 @@
     #th-layout-planner-svg .th-cer-table th{padding:8px;border:1px solid var(--line);background:var(--soft);font-size:13px;font-weight:800;text-align:center;}
     #th-layout-planner-svg .th-cer-table td{padding:0;border:1px solid var(--line);vertical-align:top;}
     #th-layout-planner-svg .th-cer-table textarea{display:block;width:100%;min-height:64px;border:0;padding:8px;font:inherit;font-size:13px;line-height:1.5;resize:vertical;background:#fff;}
-    #th-layout-planner-svg .th-cer-del-col{width:152px;}
-    #th-layout-planner-svg .th-cer-table td.th-cer-del button:disabled{opacity:.3;cursor:default;}
+    #th-layout-planner-svg .th-cer-del-col{width:120px;}
+    #th-layout-planner-svg .th-cer-table td.th-cer-del button.th-cer-handle{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;}
+    #th-layout-planner-svg .th-cer-table td.th-cer-del button.th-cer-handle:active{cursor:grabbing;}
+    #th-layout-planner-svg .th-cer-table tr{position:relative;}
+    #th-layout-planner-svg .th-cer-table tr.is-dragging{z-index:5;background:#fff;opacity:.95;box-shadow:0 8px 24px rgba(0,0,0,.22);}
+    #th-layout-planner-svg .th-cer-table tr.drop-before td{box-shadow:inset 0 3px 0 var(--active);}
+    #th-layout-planner-svg .th-cer-table tr.drop-after td{box-shadow:inset 0 -3px 0 var(--active);}
     #th-layout-planner-svg .th-cer-table td.th-cer-del{padding:6px;text-align:center;vertical-align:middle;white-space:nowrap;}
     #th-layout-planner-svg .th-cer-table td.th-cer-del button{width:32px;height:32px;padding:0;font-size:14px;line-height:1;}
     #th-layout-planner-svg .th-cer-table td.th-cer-del button + button{margin-left:4px;}
@@ -1646,6 +1651,60 @@
         row.autoSetting = nextSetting;
       }
 
+      /* 핸들(≡)을 잡고 드래그해서 행 순서 변경. 드래그 중에는 DOM을 옮기지 않고
+         행을 따라다니게(transform)만 하고, 놓을 때 state를 바꿔 다시 그림. */
+      function startCeremonyDrag(e, tr, idx){
+        if(e.button !== undefined && e.button !== 0) return;
+        e.preventDefault();
+        const handle = e.currentTarget;
+        const trs = [...tr.parentNode.querySelectorAll('tr')];
+        const others = trs.filter((_, i) => i !== idx);
+        if(!others.length) return;
+
+        const startY = e.clientY;
+        const startScroll = window.scrollY;
+        let dropIdx = idx;
+        try{handle.setPointerCapture(e.pointerId);}catch(err){}
+        tr.classList.add('is-dragging');
+
+        function onMove(ev){
+          if(ev.clientY < 70) window.scrollBy(0, -14);
+          else if(ev.clientY > window.innerHeight - 70) window.scrollBy(0, 14);
+
+          tr.style.transform = 'translateY(' + ((ev.clientY - startY) + (window.scrollY - startScroll)) + 'px)';
+
+          let above = 0;
+          others.forEach(t => {
+            const r = t.getBoundingClientRect();
+            if(ev.clientY > r.top + r.height / 2) above++;
+          });
+          dropIdx = above;
+
+          trs.forEach(t => t.classList.remove('drop-before', 'drop-after'));
+          if(above < others.length) others[above].classList.add('drop-before');
+          else others[others.length - 1].classList.add('drop-after');
+        }
+
+        function finish(commit){
+          handle.removeEventListener('pointermove', onMove);
+          handle.removeEventListener('pointerup', onUp);
+          handle.removeEventListener('pointercancel', onCancel);
+          try{handle.releasePointerCapture(e.pointerId);}catch(err){}
+          if(commit && dropIdx !== idx){
+            const moved = state.ceremonyRows.splice(idx, 1)[0];
+            state.ceremonyRows.splice(dropIdx, 0, moved);
+          }
+          renderCeremonyRows();
+          renderSummary();
+        }
+        function onUp(){ finish(true); }
+        function onCancel(){ finish(false); }
+
+        handle.addEventListener('pointermove', onMove);
+        handle.addEventListener('pointerup', onUp);
+        handle.addEventListener('pointercancel', onCancel);
+      }
+
       function renderCeremonyRows(){
         const body = root.querySelector('#th-ceremony-body');
         if(!body) return;
@@ -1669,21 +1728,13 @@
 
           const actionTd = document.createElement('td');
           actionTd.className = 'th-cer-del';
-          [['▲','위로 이동',-1],['▼','아래로 이동',1]].forEach(([sym, aria, dir]) => {
-            const mv = document.createElement('button');
-            mv.type = 'button';
-            mv.textContent = sym;
-            mv.setAttribute('aria-label', aria);
-            const target = idx + dir;
-            if(target < 0 || target >= state.ceremonyRows.length) mv.disabled = true;
-            mv.addEventListener('click', () => {
-              const rows = state.ceremonyRows;
-              [rows[idx], rows[target]] = [rows[target], rows[idx]];
-              renderCeremonyRows();
-              renderSummary();
-            });
-            actionTd.appendChild(mv);
-          });
+          const handle = document.createElement('button');
+          handle.type = 'button';
+          handle.className = 'th-cer-handle';
+          handle.textContent = '≡';
+          handle.setAttribute('aria-label', '드래그해서 순서 변경');
+          handle.addEventListener('pointerdown', e => startCeremonyDrag(e, tr, idx));
+          actionTd.appendChild(handle);
           const minus = document.createElement('button');
           minus.type = 'button';
           minus.textContent = '−';
