@@ -234,6 +234,7 @@
     #th-layout-planner-svg .th-cer-table td.th-cer-del button{width:32px;height:32px;padding:0;font-size:16px;line-height:1;}
     #th-layout-planner-svg .th-cer-table td.th-cer-del button + button{margin-left:4px;}
     #th-layout-planner-svg .th-cer-people-label{width:52px;}
+    #th-layout-planner-svg .th-cer-icon-btn{width:34px;height:34px;padding:0;font-size:16px;line-height:1;}
     #th-layout-planner-svg .th-request-textarea{width:100%;min-height:360px;border:1px solid var(--line);border-radius:14px;padding:14px;font:inherit;font-size:14px;line-height:1.6;resize:vertical;background:#fff;}
     #th-layout-planner-svg .th-mini-summary{margin-top:12px;border:1px dashed var(--line);border-radius:12px;padding:10px;color:var(--muted);font-size:13px;line-height:1.6;background:var(--soft);}
     @media (max-width:720px){
@@ -479,16 +480,8 @@
                 <input type="text" class="th-event-input person" data-person="host" data-field="name" placeholder="이름">
                 <input type="tel" class="th-event-input person" data-person="host" data-field="tel" placeholder="연락처">
               </div>
-              <div class="th-toolbar-row">
-                <span class="th-label th-cer-people-label">축사자</span>
-                <input type="text" class="th-event-input person" data-person="speech" data-field="name" placeholder="이름">
-                <input type="tel" class="th-event-input person" data-person="speech" data-field="tel" placeholder="연락처">
-              </div>
-              <div class="th-toolbar-row">
-                <span class="th-label th-cer-people-label">축가자</span>
-                <input type="text" class="th-event-input person" data-person="song" data-field="name" placeholder="이름">
-                <input type="tel" class="th-event-input person" data-person="song" data-field="tel" placeholder="연락처">
-              </div>
+              <div id="th-cer-speech-list"></div>
+              <div id="th-cer-song-list"></div>
             </div>
           </div>
         </div>
@@ -541,8 +534,8 @@
         ceremonyRows:[{order:'',items:'',setting:'',autoItems:'',autoSetting:''}],
         ceremonyPeople:{
           host:{name:'',tel:''},
-          speech:{name:'',tel:''},
-          song:{name:'',tel:''}
+          speech:[{name:'',tel:''}],
+          song:[{name:'',tel:''}]
         }
       };
 
@@ -1701,9 +1694,71 @@
       }
 
       function getCeremonyPeople(){
-        return CEREMONY_PEOPLE
-          .map(p => ({label:p.label, name:state.ceremonyPeople[p.key].name.trim(), tel:state.ceremonyPeople[p.key].tel.trim()}))
-          .filter(p => p.name || p.tel);
+        const list = [];
+        CEREMONY_PEOPLE.forEach(p => {
+          const entries = [].concat(state.ceremonyPeople[p.key]);
+          entries.forEach(e => list.push({label:p.label, name:e.name.trim(), tel:e.tel.trim()}));
+        });
+        return list.filter(p => p.name || p.tel);
+      }
+
+      /* 축사자/축가자는 여러 명 입력 가능: 각 줄에 −, 마지막 줄에만 + */
+      function renderCeremonyPeopleList(key){
+        const wrap = root.querySelector('#th-cer-' + key + '-list');
+        if(!wrap) return;
+        const label = CEREMONY_PEOPLE.find(p => p.key === key).label;
+        const entries = state.ceremonyPeople[key];
+        wrap.innerHTML = '';
+        entries.forEach((entry, idx) => {
+          const rowEl = document.createElement('div');
+          rowEl.className = 'th-toolbar-row th-cer-person-row';
+
+          const lab = document.createElement('span');
+          lab.className = 'th-label th-cer-people-label';
+          lab.textContent = label;
+          rowEl.appendChild(lab);
+
+          [['name','text','이름'],['tel','tel','연락처']].forEach(([field, type, ph]) => {
+            const input = document.createElement('input');
+            input.type = type;
+            input.className = 'th-event-input person';
+            input.placeholder = ph;
+            input.value = entry[field];
+            input.addEventListener('input', () => {
+              entry[field] = input.value;
+              renderSummary();
+            });
+            rowEl.appendChild(input);
+          });
+
+          const minus = document.createElement('button');
+          minus.type = 'button';
+          minus.className = 'th-small-btn th-cer-icon-btn';
+          minus.textContent = '−';
+          minus.setAttribute('aria-label', label + ' 삭제');
+          minus.addEventListener('click', () => {
+            entries.splice(idx, 1);
+            if(!entries.length) entries.push({name:'',tel:''});
+            renderCeremonyPeopleList(key);
+            renderSummary();
+          });
+          rowEl.appendChild(minus);
+
+          if(idx === entries.length - 1){
+            const plus = document.createElement('button');
+            plus.type = 'button';
+            plus.className = 'th-small-btn th-cer-icon-btn';
+            plus.textContent = '+';
+            plus.setAttribute('aria-label', label + ' 추가');
+            plus.addEventListener('click', () => {
+              entries.push({name:'',tel:''});
+              renderCeremonyPeopleList(key);
+              renderSummary();
+            });
+            rowEl.appendChild(plus);
+          }
+          wrap.appendChild(rowEl);
+        });
       }
 
       function makeCeremonyPrintPage(){
@@ -1900,6 +1955,8 @@
         });
       });
       renderCeremonyRows();
+      renderCeremonyPeopleList('speech');
+      renderCeremonyPeopleList('song');
 
       root.querySelector('#th-print-pdf').addEventListener('click',printPdf);
 
