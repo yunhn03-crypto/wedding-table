@@ -378,7 +378,7 @@
       <button type="button" data-floor="terrace">TERRACE &amp; 2ND FLOOR</button>
       <button type="button" data-floor="drinks">음주류</button>
       <button type="button" data-floor="request">요청사항</button>
-      <button type="button" data-floor="ceremony">식순</button>
+      <button type="button" data-floor="ceremony" class="th-ceremony-only">식순</button>
     </div>
 
     <div class="th-grid">
@@ -475,7 +475,7 @@
 애프터시 배달 음식 오후7시 30분 도착 예정이에요. 음식 수령 및 세팅 부탁드려요."></textarea>
           </div>
 
-          <div id="th-ceremony-panel" class="th-extra-panel" aria-label="식순">
+          <div id="th-ceremony-panel" class="th-extra-panel th-ceremony-only" aria-label="식순">
             <h3 class="th-extra-title">식순</h3>
             <div class="th-cer-wrap">
               <table class="th-cer-table">
@@ -506,7 +506,7 @@
           <li>Garden 테이블을 한 번 클릭하면 삭제됩니다. 사각 테이블은 ↻ 버튼을 마우스로 드래그해 원하는 각도로 회전합니다.</li>
           <li>음주류 버튼에서 웰컴드링크, 주류, 음료 수량을 선택합니다. (해당 음료가 업체 사정으로 품절일 경우 다른 음료로 대체될 수 있습니다.)</li>
           <li>요청사항 버튼에서 추가 요청사항을 입력합니다.</li>
-          <li>식순 버튼에서 행사 진행 순서를 입력합니다.</li>
+          <li class="th-ceremony-only">식순 버튼에서 행사 진행 순서를 입력합니다.</li>
 
         </ol>
         <h3>선택 내역</h3>
@@ -868,6 +868,14 @@
       const ALL_FIRST_IDS = ['1F_1','1F_2','1F_3','1F_4','1F_5','1F_6','1F_7','1F_8','1F_9','1F_10','1F_11','1F_12'];
       const ALL_TERRACE_IDS = ['T_1','T_2','T_3','T_4','T_5','T_6','T_7','Room_A1','Room_A2','Room_B1','Room_B2'];
       const AUTO_MEAL_COUNT = 216;
+
+      /* 식순 기능은 레이아웃/기능 확정 전까지 숨김. 확인용으로만 주소 뒤에 ?ceremony=1 을 붙이면 보임.
+         확정 후 노출하려면 SHOW_CEREMONY_DEFAULT 를 true 로 바꾸면 됨 (탭/패널/사용방법/선택내역/PDF 한 번에 켜짐). */
+      const SHOW_CEREMONY_DEFAULT = false;
+      const SHOW_CEREMONY = SHOW_CEREMONY_DEFAULT || new URLSearchParams(location.search).get('ceremony') === '1';
+      if(!SHOW_CEREMONY){
+        root.querySelectorAll('.th-ceremony-only').forEach(el => { el.style.display = 'none'; });
+      }
 
       /* 식순 키워드 -> 준비물/틸티드 세팅 자동 입력 목록.
          keys: 식순 칸에 이 글자가 들어가면(띄어쓰기 무시) 적용, items: 준비물, setting: 틸티드 세팅.
@@ -1506,12 +1514,14 @@
           '',
           '[요청사항]',
           '- ' + (state.requestNote || '-'),
-          '',
-          '[식순]',
-          ...(getCeremonyFilledRows().length
-            ? getCeremonyFilledRows().map(r => '- ' + (r.order || '-') + ' / ' + (r.items || '-') + ' / ' + (r.setting || '-'))
-            : ['- -']),
-          ...getCeremonyPeople().map(p => '- ' + p.label + ': ' + (p.name || '-') + ' / ' + (p.tel || '-'))
+          ...(SHOW_CEREMONY ? [
+            '',
+            '[식순]',
+            ...(getCeremonyFilledRows().length
+              ? getCeremonyFilledRows().map(r => '- ' + (r.order || '-') + ' / ' + (r.items || '-') + ' / ' + (r.setting || '-'))
+              : ['- -']),
+            ...getCeremonyPeople().map(p => '- ' + p.label + ': ' + (p.name || '-') + ' / ' + (p.tel || '-'))
+          ] : [])
         ].join('\n');
       }
 
@@ -1899,7 +1909,7 @@
         printArea.appendChild(makePrintPage('TERRACE & 2ND FLOOR', 'terrace', '80 650 1560 1780'));
         printArea.appendChild(makeTextPrintPage('음주류', getDrinksPrintText()));
         printArea.appendChild(makeTextPrintPage('요청사항', getRequestPrintText()));
-        printArea.appendChild(makeCeremonyPrintPage());
+        if(SHOW_CEREMONY) printArea.appendChild(makeCeremonyPrintPage());
 
         state.floor = originalFloor;
         renderAll();
