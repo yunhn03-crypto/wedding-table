@@ -226,7 +226,11 @@
     #th-layout-planner-svg .th-drink-tools input[type="text"]{flex:1 1 140px;height:34px;border:1px solid var(--line);border-radius:10px;padding:0 8px;font-size:12px;background:#fff;}
     #th-layout-planner-svg .th-drink-tools button{padding:7px 9px;font-size:11px;}
     #th-layout-planner-svg .th-cer-wrap{overflow-x:auto;margin-bottom:12px;}
-    #th-layout-planner-svg .th-cer-table{width:100%;min-width:560px;border-collapse:collapse;table-layout:fixed;}
+    #th-layout-planner-svg .th-cer-table{width:100%;min-width:820px;border-collapse:collapse;table-layout:fixed;}
+    #th-layout-planner-svg .th-cer-exit{display:block;padding:6px 8px;border-top:1px solid var(--line);background:var(--soft);font-size:12px;font-weight:700;color:var(--text);}
+    #th-layout-planner-svg .th-cer-exit.is-missing{color:var(--danger);}
+    #th-layout-planner-svg .th-cer-pick{display:block;width:100%;height:32px;padding:0 6px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:var(--soft);font-size:12px;color:var(--muted);}
+    #th-layout-planner-svg .th-cer-table td select.th-cer-pick:last-child{border-bottom:0;border-top:1px solid var(--line);}
     #th-layout-planner-svg .th-cer-table th{padding:8px;border:1px solid var(--line);background:var(--soft);font-size:13px;font-weight:800;text-align:center;}
     #th-layout-planner-svg .th-cer-table td{padding:0;border:1px solid var(--line);vertical-align:top;}
     #th-layout-planner-svg .th-cer-table textarea{display:block;width:100%;min-height:64px;border:0;padding:8px;font:inherit;font-size:13px;line-height:1.5;resize:vertical;background:#fff;}
@@ -479,7 +483,7 @@
             <h3 class="th-extra-title">식순</h3>
             <div class="th-cer-wrap">
               <table class="th-cer-table">
-                <thead><tr><th>식순</th><th>준비물</th><th>틸티드 세팅</th><th class="th-cer-del-col"></th></tr></thead>
+                <thead><tr><th>식순</th><th>시작 위치</th><th>신랑 신부 준비물</th><th>틸티드 준비물</th><th class="th-cer-del-col"></th></tr></thead>
                 <tbody id="th-ceremony-body"></tbody>
               </table>
             </div>
@@ -540,7 +544,7 @@
           items:{}
         },
         requestNote:'',
-        ceremonyRows:[{order:'',items:'',setting:'',autoItems:'',autoSetting:''}],
+        ceremonyRows:[{order:'',start:'',items:'',setting:'',autoItems:'',autoSetting:'',flowerExit:false}],
         ceremonyPeople:{
           host:{name:'',tel:''},
           others:[{role:'축사자',name:'',tel:''}, {role:'축가자',name:'',tel:''}]
@@ -877,15 +881,87 @@
         root.querySelectorAll('.th-ceremony-only').forEach(el => { el.style.display = 'none'; });
       }
 
-      /* 식순 키워드 -> 준비물/틸티드 세팅 자동 입력 목록.
-         keys: 식순 칸에 이 글자가 들어가면(띄어쓰기 무시) 적용, items: 준비물, setting: 틸티드 세팅.
-         아래는 손글씨 스케치에서 읽은 단어로 만든 임시 목록이라 실제 운영 목록으로 교체/추가 필요. */
-      const CEREMONY_KEYWORDS = [
-        {keys:['성혼선언'], items:['성혼선언문'], setting:[]},
-        {keys:['반지'], items:['반지'], setting:[]},
-        {keys:['케이크'], items:['웨딩케이크', '케이크 컷팅 칼'], setting:[]},
-        {keys:['축가'], items:['보면대', '마이크'], setting:[]}
+      /* 식순 표의 선택 목록 (드롭박스에서 고르면 칸에 추가됨) */
+      const CEREMONY_START_GROUPS = [
+        {label:'1부 · 입장 동반자 X', options:[
+          {label:'테라스', text:'1부 (동반자 X) 테라스'},
+          {label:'블랙문 앞(문열림)', text:'1부 (동반자 X) 블랙문 앞(문열림)'},
+          {label:'블랙문 뒤(문닫힘)', text:'1부 (동반자 X) 블랙문 뒤(문닫힘)'},
+          {label:'더라운지 문-테라스-버진로드', text:'1부 (동반자 X) 더라운지 문-테라스-버진로드'}
+        ]},
+        {label:'1부 · 입장 동반자 O', options:[
+          {label:'직접 입력', text:'1부 (동반자 O) ', typing:true}
+        ]},
+        {label:'2부', options:[
+          {label:'테이블 앞에서 진행', text:'2부 테이블 앞에서 진행'}
+        ]}
       ];
+
+      const CEREMONY_ITEM_OPTIONS = [
+        '사회자 식순지',
+        '화촉점화 기물(캔들, 촛대, 점화기)',
+        '플랜트세레머니 화분',
+        '플라워세레머니 화병',
+        '혼인서약서 A4',
+        '예물+예물케이스',
+        '성혼선언문 A4',
+        '축가 가사 A4',
+        '덕담 A4',
+        '축사 A4',
+        '신랑신부편지 A4',
+        '화동 꽃바구니+꽃잎',
+        '럭키드로우(추첨권) 선물',
+        '2부 웨딩 케이크',
+        '화동 카'
+      ];
+
+      const CEREMONY_SETTING_OPTIONS = [
+        '테이블 + 케이크 커팅 칼',
+        '샴페인 잔2개(샴페인 채워서)',
+        '샴페인 잔2개+샴페인1병(신랑신부 오더한 주류 중 1병으로 준비)',
+        '테이블+선물(신랑신부가 준비한 이벤트 선물)',
+        '테이블+조리개 세팅',
+        '테이블+꽃2송이 세팅',
+        '입장시 블랙문 오픈(문여는 시점 : 신랑신부 멘트에 맞춰서 or 음악 몇초)',
+        '이벤트 티켓함+티켓',
+        '보면대',
+        '마이크',
+        '마이크+스탠드',
+        '웨딩케이스'
+      ];
+
+      /* 식순 키워드 -> 신랑 신부 준비물 / 틸티드 준비물 자동 입력 목록.
+         keys: 식순 칸에 이 글자가 들어가면(띄어쓰기 무시) 적용. 항목 이름은 위 선택 목록과 같은 문구.
+         (항목과 식순 이름을 짝지은 건 추정이라 실제 운영과 다르면 수정 필요) */
+      const ceremonyItem = prefix => CEREMONY_ITEM_OPTIONS.find(t => t.startsWith(prefix));
+      const ceremonySetting = prefix => CEREMONY_SETTING_OPTIONS.find(t => t.startsWith(prefix));
+      const CEREMONY_KEYWORDS = [
+        {keys:['화촉'], items:[ceremonyItem('화촉점화')], setting:[]},
+        {keys:['플랜트'], items:[ceremonyItem('플랜트')], setting:[ceremonySetting('테이블+조리개')]},
+        {keys:['플라워'], items:[ceremonyItem('플라워')], setting:[ceremonySetting('테이블+꽃2송이')]},
+        {keys:['서약'], items:[ceremonyItem('혼인서약서')], setting:[]},
+        {keys:['예물'], items:[ceremonyItem('예물')], setting:[]},
+        {keys:['성혼'], items:[ceremonyItem('성혼선언문')], setting:[]},
+        {keys:['축가'], items:[ceremonyItem('축가 가사')], setting:[ceremonySetting('보면대'), ceremonySetting('마이크')]},
+        {keys:['덕담'], items:[ceremonyItem('덕담')], setting:[ceremonySetting('마이크')]},
+        {keys:['축사'], items:[ceremonyItem('축사')], setting:[ceremonySetting('마이크')]},
+        {keys:['편지'], items:[ceremonyItem('신랑신부편지')], setting:[]},
+        {keys:['화동'], items:[ceremonyItem('화동 꽃바구니')], setting:[]},
+        {keys:['럭키','추첨'], items:[ceremonyItem('럭키드로우')], setting:[ceremonySetting('이벤트 티켓함')]},
+        {keys:['케이크'], items:[ceremonyItem('2부 웨딩 케이크')], setting:[ceremonySetting('테이블 + 케이크')]}
+      ];
+
+      /* 신랑/신부 입장 행에서만 '시작 위치' 드롭박스를 보여줌 */
+      function isCeremonyEntrance(order){
+        const t = String(order || '').replace(/\s+/g, '');
+        return t.includes('입장') && (t.includes('신랑') || t.includes('신부'));
+      }
+
+      /* 화동 입장 행에는 '화동 퇴장' 체크가 필수 */
+      function isFlowerEntrance(order){
+        const t = String(order || '').replace(/\s+/g, '');
+        return t.includes('화동') && t.includes('입장');
+      }
 
       const CEREMONY_ROLES = ['축사자', '축가자', '축시자', '축도', '축무자'];
 
@@ -1518,7 +1594,7 @@
             '',
             '[식순]',
             ...(getCeremonyFilledRows().length
-              ? getCeremonyFilledRows().map(r => '- ' + (r.order || '-') + ' / ' + (r.items || '-') + ' / ' + (r.setting || '-'))
+              ? getCeremonyFilledRows().map(r => '- ' + (r.order.replace(/\n/g, ' ') || '-') + ' / ' + (r.start || '-') + ' / ' + (r.items.replace(/\n/g, ', ') || '-') + ' / ' + (r.setting.replace(/\n/g, ', ') || '-'))
               : ['- -']),
             ...getCeremonyPeople().map(p => '- ' + p.label + ': ' + (p.name || '-') + ' / ' + (p.tel || '-'))
           ] : [])
@@ -1622,13 +1698,16 @@
       }
 
       function newCeremonyRow(){
-        return {order:'',items:'',setting:'',autoItems:'',autoSetting:''};
+        return {order:'',start:'',items:'',setting:'',autoItems:'',autoSetting:'',flowerExit:false};
       }
 
       function getCeremonyFilledRows(){
         return state.ceremonyRows
-          .map(r => ({order:r.order.trim(), items:r.items.trim(), setting:r.setting.trim()}))
-          .filter(r => r.order || r.items || r.setting);
+          .map(r => ({
+            order:r.order.trim() + (isFlowerEntrance(r.order) ? '\n[화동 퇴장 ' + (r.flowerExit ? '체크 완료' : '미체크') + ']' : ''),
+            start:r.start.trim(), items:r.items.trim(), setting:r.setting.trim()
+          }))
+          .filter(r => r.order || r.start || r.items || r.setting);
       }
 
       /* 식순 문구에 키워드가 있으면 준비물/틸티드 세팅을 자동 입력.
@@ -1642,8 +1721,8 @@
           (entry.items || []).forEach(v => { if(!items.includes(v)) items.push(v); });
           (entry.setting || []).forEach(v => { if(!setting.includes(v)) setting.push(v); });
         });
-        const nextItems = items.join(', ');
-        const nextSetting = setting.join(', ');
+        const nextItems = items.join('\n');
+        const nextSetting = setting.join('\n');
         if(row.items === row.autoItems){
           row.items = nextItems;
           itemsTa.value = nextItems;
@@ -1717,17 +1796,112 @@
         state.ceremonyRows.forEach((row, idx) => {
           const tr = document.createElement('tr');
           const tas = {};
-          ['order','items','setting'].forEach(key => {
+          let startSel = null;
+          let exitBox = null;
+          function syncExitBox(){
+            if(!exitBox) return;
+            exitBox.style.display = isFlowerEntrance(row.order) ? '' : 'none';
+            exitBox.classList.toggle('is-missing', !row.flowerExit);
+          }
+
+          /* 드롭박스 만들기: 첫 칸은 안내 문구(value ''), 고르면 onPick 호출 후 안내 문구로 되돌림 */
+          function makePicker(placeholder, fill, onPick){
+            const sel = document.createElement('select');
+            sel.className = 'th-cer-pick';
+            const first = document.createElement('option');
+            first.value = '';
+            first.textContent = placeholder;
+            sel.appendChild(first);
+            fill(sel);
+            sel.addEventListener('change', () => {
+              const v = sel.value;
+              sel.value = '';
+              if(v !== '') onPick(v);
+            });
+            return sel;
+          }
+
+          function appendLine(key, text){
+            const lines = row[key].split('\n').filter(Boolean);
+            if(!lines.includes(text)) lines.push(text);
+            row[key] = lines.join('\n');
+            tas[key].value = row[key];
+            renderSummary();
+          }
+
+          ['order','start','items','setting'].forEach(key => {
             const td = document.createElement('td');
             const ta = document.createElement('textarea');
             ta.value = row[key];
             ta.addEventListener('input', () => {
               row[key] = ta.value;
-              if(key === 'order') autoFillCeremonyRow(row, tas.items, tas.setting);
+              if(key === 'order'){
+                autoFillCeremonyRow(row, tas.items, tas.setting);
+                if(startSel) startSel.style.display = isCeremonyEntrance(row.order) ? '' : 'none';
+                syncExitBox();
+              }
               renderSummary();
             });
             tas[key] = ta;
+
+            if(key === 'start'){
+              const typingTexts = {};
+              startSel = makePicker('시작 위치 선택', sel => {
+                CEREMONY_START_GROUPS.forEach(g => {
+                  const og = document.createElement('optgroup');
+                  og.label = g.label;
+                  g.options.forEach(o => {
+                    const opt = document.createElement('option');
+                    opt.value = o.text;
+                    opt.textContent = o.label;
+                    if(o.typing) typingTexts[o.text] = true;
+                    og.appendChild(opt);
+                  });
+                  sel.appendChild(og);
+                });
+              }, text => {
+                row.start = text;
+                ta.value = text;
+                renderSummary();
+                if(typingTexts[text]){
+                  ta.focus();
+                  ta.setSelectionRange(text.length, text.length);
+                }
+              });
+              startSel.style.display = isCeremonyEntrance(row.order) ? '' : 'none';
+              td.appendChild(startSel);
+            }
+
             td.appendChild(ta);
+
+            if(key === 'order'){
+              exitBox = document.createElement('label');
+              exitBox.className = 'th-cer-exit';
+              const cb = document.createElement('input');
+              cb.type = 'checkbox';
+              cb.checked = row.flowerExit;
+              cb.addEventListener('change', () => {
+                row.flowerExit = cb.checked;
+                syncExitBox();
+                renderSummary();
+              });
+              exitBox.appendChild(cb);
+              exitBox.appendChild(document.createTextNode(' 화동 퇴장 체크 (필수)'));
+              td.appendChild(exitBox);
+              syncExitBox();
+            }
+
+            if(key === 'items' || key === 'setting'){
+              const list = key === 'items' ? CEREMONY_ITEM_OPTIONS : CEREMONY_SETTING_OPTIONS;
+              td.appendChild(makePicker('+ 항목 선택', sel => {
+                list.forEach(text => {
+                  const opt = document.createElement('option');
+                  opt.value = text;
+                  opt.textContent = text;
+                  sel.appendChild(opt);
+                });
+              }, text => appendLine(key, text)));
+            }
             tr.appendChild(td);
           });
 
@@ -1878,7 +2052,7 @@
 
         const rows = getCeremonyFilledRows();
         if(rows.length){
-          page.appendChild(buildTable(['식순','준비물','틸티드 세팅'], rows.map(r => [r.order, r.items, r.setting])));
+          page.appendChild(buildTable(['식순','시작 위치','신랑 신부 준비물','틸티드 준비물'], rows.map(r => [r.order, r.start, r.items, r.setting])));
         }
 
         const people = getCeremonyPeople();
