@@ -242,19 +242,25 @@
     #th-layout-planner-svg .th-cer-table th{padding:8px 4px;border:1px solid var(--line);background:var(--soft);font-size:12px;font-weight:800;text-align:center;}
     #th-layout-planner-svg .th-cer-table td{padding:0;border:1px solid var(--line);vertical-align:top;}
     #th-layout-planner-svg .th-cer-table textarea{display:block;width:100%;min-height:56px;border:0;padding:8px;font:inherit;font-size:12.5px;line-height:1.5;resize:none;overflow:hidden;background:#fff;}
-    #th-layout-planner-svg .th-cer-del-col{width:120px;}
-    #th-layout-planner-svg .th-cer-table td.th-cer-del button.th-cer-handle{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;}
-    #th-layout-planner-svg .th-cer-table td.th-cer-del button.th-cer-handle:active{cursor:grabbing;}
+    #th-layout-planner-svg .th-cer-del-col{width:96px;}
+    #th-layout-planner-svg .th-cer-ico{display:inline-flex;flex:0 0 28px;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:0;border-radius:8px;background:transparent;box-shadow:none;color:#9ca3af;line-height:1;}
+    #th-layout-planner-svg .th-cer-ico svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;}
+    #th-layout-planner-svg .th-cer-ico:hover{background:var(--soft);color:var(--text);}
+    #th-layout-planner-svg .th-cer-ico-minus:hover{color:var(--danger);}
+    #th-layout-planner-svg .th-cer-ico-plus{color:var(--text);}
+    #th-layout-planner-svg .th-cer-ico-spacer{display:inline-block;flex:0 0 28px;width:28px;height:28px;}
+    #th-layout-planner-svg .th-cer-actions{display:flex;align-items:center;justify-content:center;gap:2px;}
+    #th-layout-planner-svg .th-cer-ico.th-cer-handle{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;}
+    #th-layout-planner-svg .th-cer-ico.th-cer-handle:active{cursor:grabbing;}
     #th-layout-planner-svg .th-cer-table tr{position:relative;}
     #th-layout-planner-svg .th-cer-table tr.is-dragging{z-index:5;background:#fff;opacity:.95;box-shadow:0 8px 24px rgba(0,0,0,.22);}
     #th-layout-planner-svg .th-cer-table tr.drop-before td{box-shadow:inset 0 3px 0 var(--active);}
     #th-layout-planner-svg .th-cer-table tr.drop-after td{box-shadow:inset 0 -3px 0 var(--active);}
-    #th-layout-planner-svg .th-cer-table td.th-cer-del{padding:6px;text-align:center;vertical-align:middle;white-space:nowrap;}
-    #th-layout-planner-svg .th-cer-table td.th-cer-del button{width:32px;height:32px;padding:0;font-size:14px;line-height:1;}
-    #th-layout-planner-svg .th-cer-table td.th-cer-del button + button{margin-left:4px;}
+    #th-layout-planner-svg .th-cer-table td.th-cer-del{padding:4px;text-align:center;vertical-align:middle;white-space:nowrap;}
+    #th-layout-planner-svg .th-cer-person-row{flex-wrap:nowrap;}
+    #th-layout-planner-svg .th-cer-person-row .th-event-input{flex:1 1 0;min-width:0;}
     #th-layout-planner-svg .th-cer-people-label{width:92px;}
     #th-layout-planner-svg .th-cer-role-select{width:92px;}
-    #th-layout-planner-svg .th-cer-icon-btn{width:34px;height:34px;padding:0;font-size:16px;line-height:1;}
     #th-layout-planner-svg .th-request-textarea{width:100%;min-height:360px;border:1px solid var(--line);border-radius:14px;padding:14px;font:inherit;font-size:14px;line-height:1.6;resize:vertical;background:#fff;}
     #th-layout-planner-svg .th-mini-summary{margin-top:12px;border:1px dashed var(--line);border-radius:12px;padding:10px;color:var(--muted);font-size:13px;line-height:1.6;background:var(--soft);}
     @media (max-width:720px){
@@ -1741,6 +1747,30 @@
         });
       }
 
+      /* 행 오른쪽 아이콘 버튼 (순서 이동 핸들 / 삭제 − / 추가 +): 테두리 없는 작은 아이콘 */
+      const CEREMONY_ICONS = {
+        grip:'<svg viewBox="0 0 16 16" aria-hidden="true"><g fill="currentColor" stroke="none"><circle cx="6" cy="4" r="1.2"/><circle cx="10" cy="4" r="1.2"/><circle cx="6" cy="8" r="1.2"/><circle cx="10" cy="8" r="1.2"/><circle cx="6" cy="12" r="1.2"/><circle cx="10" cy="12" r="1.2"/></g></svg>',
+        minus:'<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8h9"/></svg>',
+        plus:'<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8h9M8 3.5v9"/></svg>'
+      };
+
+      function makeCeremonyIcon(kind, label){
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'th-cer-ico th-cer-ico-' + kind;
+        btn.innerHTML = CEREMONY_ICONS[kind];
+        btn.setAttribute('aria-label', label);
+        btn.title = label;
+        return btn;
+      }
+
+      /* + 는 마지막 줄에만 보이지만 자리는 모든 줄에 비워둬서 버튼 위치가 줄마다 같게 맞춤 */
+      function makeCeremonySpacer(){
+        const sp = document.createElement('span');
+        sp.className = 'th-cer-ico-spacer';
+        return sp;
+      }
+
       function newCeremonyRow(){
         return {order:'',start:'',items:'',setting:'',autoItems:'',autoSetting:'',checks:{}};
       }
@@ -1984,36 +2014,35 @@
 
           const actionTd = document.createElement('td');
           actionTd.className = 'th-cer-del';
-          const handle = document.createElement('button');
-          handle.type = 'button';
-          handle.className = 'th-cer-handle';
-          handle.textContent = '≡';
-          handle.setAttribute('aria-label', '드래그해서 순서 변경');
+          const actions = document.createElement('div');
+          actions.className = 'th-cer-actions';
+
+          const handle = makeCeremonyIcon('grip', '드래그해서 순서 변경');
+          handle.classList.add('th-cer-handle');
           handle.addEventListener('pointerdown', e => startCeremonyDrag(e, tr, idx));
-          actionTd.appendChild(handle);
-          const minus = document.createElement('button');
-          minus.type = 'button';
-          minus.textContent = '−';
-          minus.setAttribute('aria-label', '행 삭제');
+          actions.appendChild(handle);
+
+          const minus = makeCeremonyIcon('minus', '행 삭제');
           minus.addEventListener('click', () => {
             state.ceremonyRows.splice(idx, 1);
             if(!state.ceremonyRows.length) state.ceremonyRows.push(newCeremonyRow());
             renderCeremonyRows();
             renderSummary();
           });
-          actionTd.appendChild(minus);
+          actions.appendChild(minus);
+
           if(idx === state.ceremonyRows.length - 1){
-            const plus = document.createElement('button');
-            plus.type = 'button';
-            plus.textContent = '+';
-            plus.setAttribute('aria-label', '행 추가');
+            const plus = makeCeremonyIcon('plus', '행 추가');
             plus.addEventListener('click', () => {
               state.ceremonyRows.push(newCeremonyRow());
               renderCeremonyRows();
               renderSummary();
             });
-            actionTd.appendChild(plus);
+            actions.appendChild(plus);
+          }else{
+            actions.appendChild(makeCeremonySpacer());
           }
+          actionTd.appendChild(actions);
           tr.appendChild(actionTd);
           body.appendChild(tr);
         });
@@ -2066,11 +2095,7 @@
             rowEl.appendChild(input);
           });
 
-          const minus = document.createElement('button');
-          minus.type = 'button';
-          minus.className = 'th-small-btn th-cer-icon-btn';
-          minus.textContent = '−';
-          minus.setAttribute('aria-label', '담당자 삭제');
+          const minus = makeCeremonyIcon('minus', '담당자 삭제');
           minus.addEventListener('click', () => {
             entries.splice(idx, 1);
             if(!entries.length) entries.push({role:CEREMONY_ROLES[0],name:'',tel:''});
@@ -2080,17 +2105,15 @@
           rowEl.appendChild(minus);
 
           if(idx === entries.length - 1){
-            const plus = document.createElement('button');
-            plus.type = 'button';
-            plus.className = 'th-small-btn th-cer-icon-btn';
-            plus.textContent = '+';
-            plus.setAttribute('aria-label', '담당자 추가');
+            const plus = makeCeremonyIcon('plus', '담당자 추가');
             plus.addEventListener('click', () => {
               entries.push({role:CEREMONY_ROLES[0],name:'',tel:''});
               renderCeremonyPeopleList();
               renderSummary();
             });
             rowEl.appendChild(plus);
+          }else{
+            rowEl.appendChild(makeCeremonySpacer());
           }
           wrap.appendChild(rowEl);
         });
