@@ -259,8 +259,13 @@
     #th-layout-planner-svg .th-cer-table td.th-cer-del{padding:4px;text-align:center;vertical-align:middle;white-space:nowrap;}
     #th-layout-planner-svg .th-cer-person-row{flex-wrap:nowrap;}
     #th-layout-planner-svg .th-cer-person-row .th-event-input{flex:1 1 0;min-width:0;}
-    #th-layout-planner-svg .th-cer-people-label{width:92px;}
-    #th-layout-planner-svg .th-cer-role-select{width:92px;}
+    @media (max-width:520px){
+      #th-layout-planner-svg .th-cer-person-row{flex-wrap:wrap;}
+      #th-layout-planner-svg .th-cer-person-row .th-cer-role-select,
+      #th-layout-planner-svg .th-cer-person-row .th-cer-people-label{flex:1 0 100%;width:100%;}
+    }
+    #th-layout-planner-svg .th-cer-people-label{width:112px;}
+    #th-layout-planner-svg .th-cer-role-select{width:112px;}
     #th-layout-planner-svg .th-request-textarea{width:100%;min-height:360px;border:1px solid var(--line);border-radius:14px;padding:14px;font:inherit;font-size:14px;line-height:1.6;resize:vertical;background:#fff;}
     #th-layout-planner-svg .th-mini-summary{margin-top:12px;border:1px dashed var(--line);border-radius:12px;padding:10px;color:var(--muted);font-size:13px;line-height:1.6;background:var(--soft);}
     @media (max-width:720px){
@@ -503,7 +508,7 @@
             </div>
             <div class="th-section-box th-cer-people">
               <h4 class="th-section-title">진행 담당</h4>
-              <div class="th-toolbar-row">
+              <div class="th-toolbar-row th-cer-person-row">
                 <span class="th-label th-cer-people-label">사회자</span>
                 <input type="text" class="th-event-input person" data-person="host" data-field="name" placeholder="이름">
                 <input type="tel" class="th-event-input person" data-person="host" data-field="tel" placeholder="연락처">
@@ -1003,7 +1008,7 @@
         {key:'hostScript', test:needsHostScript, text:'사회자 진행 시 사회자 대본에 삽입 (필수)', tag:'사회자 대본 삽입'}
       ];
 
-      const CEREMONY_ROLES = ['축사자', '축가자', '축시자', '축도', '축무자', '화동', '화견', '보호자'];
+      const CEREMONY_ROLES = ['축사자', '축가자', '축시자', '축도', '축무자', '화동 보호자', '화견보호자'];
 
       const DRINK_CATALOG = [
         {key:'laVieilleFermeRouge', name:'VENTOUX ROUGE FAMILLE PERRIN', label:'벙뚜 루즈 파미유 페랑', unit:'5.5', group:'wine'},
