@@ -227,6 +227,7 @@
     #th-layout-planner-svg .th-drink-tools button{padding:7px 9px;font-size:11px;}
     #th-layout-planner-svg .th-cer-wrap{overflow-x:auto;margin-bottom:12px;}
     #th-layout-planner-svg .th-cer-table{width:100%;min-width:820px;border-collapse:collapse;table-layout:fixed;}
+    #th-layout-planner-svg .th-cer-table textarea.is-locked{background:var(--soft);color:var(--muted);cursor:not-allowed;}
     #th-layout-planner-svg .th-cer-exit{display:block;padding:6px 8px;border-top:1px solid var(--line);background:var(--soft);font-size:12px;font-weight:700;color:var(--text);}
     #th-layout-planner-svg .th-cer-exit.is-missing{color:var(--danger);}
     #th-layout-planner-svg .th-cer-pick{display:block;width:100%;height:32px;padding:0 6px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:var(--soft);font-size:12px;color:var(--muted);}
@@ -957,13 +958,20 @@
         return t.includes('입장') && (t.includes('신랑') || t.includes('신부'));
       }
 
+      /* 화동/화견 입장 행은 시작 위치가 '버진로드 앞'으로 고정 */
+      const CEREMONY_FLOWER_START = '버진로드 앞';
+      function isFlowerLead(order){
+        const t = String(order || '').replace(/\s+/g, '');
+        return t.includes('입장') && (t.includes('화동') || t.includes('화견'));
+      }
+
       /* 화동 입장 행에는 '화동 퇴장' 체크가 필수 */
       function isFlowerEntrance(order){
         const t = String(order || '').replace(/\s+/g, '');
         return t.includes('화동') && t.includes('입장');
       }
 
-      const CEREMONY_ROLES = ['축사자', '축가자', '축시자', '축도', '축무자'];
+      const CEREMONY_ROLES = ['축사자', '축가자', '축시자', '축도', '축무자', '화동', '화견', '보호자'];
 
       const DRINK_CATALOG = [
         {key:'laVieilleFermeRouge', name:'VENTOUX ROUGE FAMILLE PERRIN', label:'벙뚜 루즈 파미유 페랑', unit:'5.5', group:'wine'},
@@ -1798,6 +1806,28 @@
           const tas = {};
           let startSel = null;
           let exitBox = null;
+          /* 화동/화견 입장이면 시작 위치를 '버진로드 앞'으로 잠금, 아니면 잠금 해제 */
+          function syncStart(){
+            const ta = tas.start;
+            if(!ta) return;
+            if(isFlowerLead(row.order)){
+              row.start = CEREMONY_FLOWER_START;
+              ta.value = CEREMONY_FLOWER_START;
+              ta.readOnly = true;
+              ta.classList.add('is-locked');
+              if(startSel) startSel.style.display = 'none';
+            }else{
+              if(ta.readOnly){
+                ta.readOnly = false;
+                ta.classList.remove('is-locked');
+                if(row.start === CEREMONY_FLOWER_START){
+                  row.start = '';
+                  ta.value = '';
+                }
+              }
+              if(startSel) startSel.style.display = isCeremonyEntrance(row.order) ? '' : 'none';
+            }
+          }
           function syncExitBox(){
             if(!exitBox) return;
             exitBox.style.display = isFlowerEntrance(row.order) ? '' : 'none';
@@ -1837,7 +1867,7 @@
               row[key] = ta.value;
               if(key === 'order'){
                 autoFillCeremonyRow(row, tas.items, tas.setting);
-                if(startSel) startSel.style.display = isCeremonyEntrance(row.order) ? '' : 'none';
+                syncStart();
                 syncExitBox();
               }
               renderSummary();
@@ -1904,6 +1934,7 @@
             }
             tr.appendChild(td);
           });
+          syncStart();
 
           const actionTd = document.createElement('td');
           actionTd.className = 'th-cer-del';
