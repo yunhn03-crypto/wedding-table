@@ -226,15 +226,22 @@
     #th-layout-planner-svg .th-drink-tools input[type="text"]{flex:1 1 140px;height:34px;border:1px solid var(--line);border-radius:10px;padding:0 8px;font-size:12px;background:#fff;}
     #th-layout-planner-svg .th-drink-tools button{padding:7px 9px;font-size:11px;}
     #th-layout-planner-svg .th-cer-wrap{overflow-x:auto;margin-bottom:12px;}
-    #th-layout-planner-svg .th-cer-table{width:100%;min-width:820px;border-collapse:collapse;table-layout:fixed;}
+    #th-layout-planner-svg .th-cer-table{width:100%;border-collapse:collapse;table-layout:fixed;}
+    #th-layout-planner-svg .th-cer-table th:nth-child(1){width:17%;}
+    #th-layout-planner-svg .th-cer-table th:nth-child(2){width:20%;}
+    #th-layout-planner-svg .th-cer-table th:nth-child(3){width:26%;}
+    #th-layout-planner-svg .th-cer-table th:nth-child(4){width:26%;}
+    @media (max-width:860px){
+      #th-layout-planner-svg .th-cer-table{min-width:760px;}
+    }
     #th-layout-planner-svg .th-cer-table textarea.is-locked{background:var(--soft);color:var(--muted);cursor:not-allowed;}
     #th-layout-planner-svg .th-cer-exit{display:block;padding:6px 8px;border-top:1px solid var(--line);background:var(--soft);font-size:12px;font-weight:700;color:var(--text);}
     #th-layout-planner-svg .th-cer-exit.is-missing{color:var(--danger);}
     #th-layout-planner-svg .th-cer-pick{display:block;width:100%;height:32px;padding:0 6px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:var(--soft);font-size:12px;color:var(--muted);}
     #th-layout-planner-svg .th-cer-table td select.th-cer-pick:last-child{border-bottom:0;border-top:1px solid var(--line);}
-    #th-layout-planner-svg .th-cer-table th{padding:8px;border:1px solid var(--line);background:var(--soft);font-size:13px;font-weight:800;text-align:center;}
+    #th-layout-planner-svg .th-cer-table th{padding:8px 4px;border:1px solid var(--line);background:var(--soft);font-size:12px;font-weight:800;text-align:center;}
     #th-layout-planner-svg .th-cer-table td{padding:0;border:1px solid var(--line);vertical-align:top;}
-    #th-layout-planner-svg .th-cer-table textarea{display:block;width:100%;min-height:64px;border:0;padding:8px;font:inherit;font-size:13px;line-height:1.5;resize:vertical;background:#fff;}
+    #th-layout-planner-svg .th-cer-table textarea{display:block;width:100%;min-height:56px;border:0;padding:8px;font:inherit;font-size:12.5px;line-height:1.5;resize:none;overflow:hidden;background:#fff;}
     #th-layout-planner-svg .th-cer-del-col{width:120px;}
     #th-layout-planner-svg .th-cer-table td.th-cer-del button.th-cer-handle{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;}
     #th-layout-planner-svg .th-cer-table td.th-cer-del button.th-cer-handle:active{cursor:grabbing;}
@@ -545,7 +552,7 @@
           items:{}
         },
         requestNote:'',
-        ceremonyRows:[{order:'',start:'',items:'',setting:'',autoItems:'',autoSetting:'',flowerExit:false}],
+        ceremonyRows:[{order:'',start:'',items:'',setting:'',autoItems:'',autoSetting:'',checks:{}}],
         ceremonyPeople:{
           host:{name:'',tel:''},
           others:[{role:'축사자',name:'',tel:''}, {role:'축가자',name:'',tel:''}]
@@ -822,6 +829,7 @@
         if(requestPanel) requestPanel.classList.toggle('is-active', state.floor === 'request');
         const ceremonyPanel = root.querySelector('#th-ceremony-panel');
         if(ceremonyPanel) ceremonyPanel.classList.toggle('is-active', state.floor === 'ceremony');
+        if(state.floor === 'ceremony') fitCeremonyTextareas();
 
         if(state.floor === 'garden'){
           drawGardenBase();
@@ -924,7 +932,7 @@
         '테이블+조리개 세팅',
         '테이블+꽃2송이 세팅',
         '입장시 블랙문 오픈(문여는 시점 : 신랑신부 멘트에 맞춰서 or 음악 몇초)',
-        '이벤트 티켓함+티켓',
+        '이벤트 티켓함+티켓(티켓 축의대에서 제공)',
         '보면대',
         '마이크',
         '마이크+스탠드',
@@ -936,20 +944,26 @@
          (항목과 식순 이름을 짝지은 건 추정이라 실제 운영과 다르면 수정 필요) */
       const ceremonyItem = prefix => CEREMONY_ITEM_OPTIONS.find(t => t.startsWith(prefix));
       const ceremonySetting = prefix => CEREMONY_SETTING_OPTIONS.find(t => t.startsWith(prefix));
+      /* 낭독/축하 순서에서 쓰는 틸티드 준비물 묶음: 보면대, 웨딩케이스, 마이크 */
+      const CEREMONY_READING_SET = [ceremonySetting('보면대'), ceremonySetting('웨딩케이스'), ceremonySetting('마이크')];
+      /* 건배제의: 샴페인 2가지 중 하나를 고르는 항목이라 '또는'으로 한 줄에 같이 넣음 */
+      const CEREMONY_TOAST_SETTING = ceremonySetting('샴페인 잔2개(샴페인 채워서)') + ' 또는 ' + ceremonySetting('샴페인 잔2개+샴페인1병');
       const CEREMONY_KEYWORDS = [
         {keys:['화촉'], items:[ceremonyItem('화촉점화')], setting:[]},
         {keys:['플랜트'], items:[ceremonyItem('플랜트')], setting:[ceremonySetting('테이블+조리개')]},
         {keys:['플라워'], items:[ceremonyItem('플라워')], setting:[ceremonySetting('테이블+꽃2송이')]},
-        {keys:['서약'], items:[ceremonyItem('혼인서약서')], setting:[]},
-        {keys:['예물'], items:[ceremonyItem('예물')], setting:[]},
-        {keys:['성혼'], items:[ceremonyItem('성혼선언문')], setting:[]},
-        {keys:['축가'], items:[ceremonyItem('축가 가사')], setting:[ceremonySetting('보면대'), ceremonySetting('마이크')]},
-        {keys:['덕담'], items:[ceremonyItem('덕담')], setting:[ceremonySetting('마이크')]},
-        {keys:['축사'], items:[ceremonyItem('축사')], setting:[ceremonySetting('마이크')]},
-        {keys:['편지'], items:[ceremonyItem('신랑신부편지')], setting:[]},
+        {keys:['서약'], items:[ceremonyItem('혼인서약서')], setting:CEREMONY_READING_SET},
+        {keys:['성혼'], items:[ceremonyItem('성혼선언문')], setting:CEREMONY_READING_SET},
+        {keys:['예물', '반지', '웨딩링'], items:[ceremonyItem('예물')], setting:[]},
+        {keys:['축가'], items:[ceremonyItem('축가 가사')], setting:CEREMONY_READING_SET},
+        {keys:['덕담'], items:[ceremonyItem('덕담')], setting:CEREMONY_READING_SET},
+        {keys:['축사'], items:[ceremonyItem('축사')], setting:CEREMONY_READING_SET},
+        {keys:['축연'], items:[], setting:CEREMONY_READING_SET},
+        {keys:['편지'], items:[ceremonyItem('신랑신부편지')], setting:[ceremonySetting('마이크')]},
         {keys:['화동'], items:[ceremonyItem('화동 꽃바구니')], setting:[]},
-        {keys:['럭키','추첨'], items:[ceremonyItem('럭키드로우')], setting:[ceremonySetting('이벤트 티켓함')]},
-        {keys:['케이크'], items:[ceremonyItem('2부 웨딩 케이크')], setting:[ceremonySetting('테이블 + 케이크')]}
+        {keys:['럭키','추첨'], items:[ceremonyItem('럭키드로우')], setting:[ceremonySetting('이벤트 티켓함'), ceremonySetting('테이블+선물')]},
+        {keys:['케이크'], items:[ceremonyItem('2부 웨딩 케이크')], setting:[ceremonySetting('테이블 + 케이크')]},
+        {keys:['건배'], items:[], setting:[CEREMONY_TOAST_SETTING]}
       ];
 
       /* 신랑/신부 입장 행에서만 '시작 위치' 드롭박스를 보여줌 */
@@ -965,11 +979,23 @@
         return t.includes('입장') && (t.includes('화동') || t.includes('화견'));
       }
 
-      /* 화동 입장 행에는 '화동 퇴장' 체크가 필수 */
       function isFlowerEntrance(order){
         const t = String(order || '').replace(/\s+/g, '');
         return t.includes('화동') && t.includes('입장');
       }
+
+      function needsHostScript(order){
+        const t = String(order || '').replace(/\s+/g, '');
+        return t.includes('서약') || t.includes('성혼');
+      }
+
+      /* 해당 식순 행에 필수로 표시되는 체크박스
+         - 화동 입장: 화동 퇴장 체크
+         - 혼인서약서/성혼선언문 낭독: 사회자가 진행하면 사회자 대본에 삽입 */
+      const CEREMONY_CHECKS = [
+        {key:'flowerExit', test:isFlowerEntrance, text:'화동 퇴장 체크 (필수)', tag:'화동 퇴장'},
+        {key:'hostScript', test:needsHostScript, text:'사회자 진행 시 사회자 대본에 삽입 (필수)', tag:'사회자 대본 삽입'}
+      ];
 
       const CEREMONY_ROLES = ['축사자', '축가자', '축시자', '축도', '축무자', '화동', '화견', '보호자'];
 
@@ -1705,14 +1731,27 @@
         return (state.requestNote || '').trim() || '입력된 요청사항이 없습니다.';
       }
 
+      /* 식순 칸을 내용 길이에 맞게 늘려서 칸 안에서 스크롤하지 않고 한눈에 보이게 함.
+         (식순 탭이 숨겨져 있을 때는 높이를 잴 수 없어서, 탭이 보일 때 다시 맞춤) */
+      function fitCeremonyTextareas(){
+        root.querySelectorAll('.th-cer-table textarea').forEach(ta => {
+          if(!ta.offsetParent) return;
+          ta.style.height = 'auto';
+          ta.style.height = ta.scrollHeight + 'px';
+        });
+      }
+
       function newCeremonyRow(){
-        return {order:'',start:'',items:'',setting:'',autoItems:'',autoSetting:'',flowerExit:false};
+        return {order:'',start:'',items:'',setting:'',autoItems:'',autoSetting:'',checks:{}};
       }
 
       function getCeremonyFilledRows(){
         return state.ceremonyRows
           .map(r => ({
-            order:r.order.trim() + (isFlowerEntrance(r.order) ? '\n[화동 퇴장 ' + (r.flowerExit ? '체크 완료' : '미체크') + ']' : ''),
+            order:r.order.trim() + CEREMONY_CHECKS
+              .filter(c => c.test(r.order))
+              .map(c => '\n[' + c.tag + ' ' + (r.checks[c.key] ? '체크 완료' : '미체크') + ']')
+              .join(''),
             start:r.start.trim(), items:r.items.trim(), setting:r.setting.trim()
           }))
           .filter(r => r.order || r.start || r.items || r.setting);
@@ -1805,7 +1844,7 @@
           const tr = document.createElement('tr');
           const tas = {};
           let startSel = null;
-          let exitBox = null;
+          const checkEls = [];
           /* 화동/화견 입장이면 시작 위치를 '버진로드 앞'으로 잠금, 아니면 잠금 해제 */
           function syncStart(){
             const ta = tas.start;
@@ -1829,9 +1868,10 @@
             }
           }
           function syncExitBox(){
-            if(!exitBox) return;
-            exitBox.style.display = isFlowerEntrance(row.order) ? '' : 'none';
-            exitBox.classList.toggle('is-missing', !row.flowerExit);
+            checkEls.forEach(({el, check}) => {
+              el.style.display = check.test(row.order) ? '' : 'none';
+              el.classList.toggle('is-missing', !row.checks[check.key]);
+            });
           }
 
           /* 드롭박스 만들기: 첫 칸은 안내 문구(value ''), 고르면 onPick 호출 후 안내 문구로 되돌림 */
@@ -1857,6 +1897,7 @@
             row[key] = lines.join('\n');
             tas[key].value = row[key];
             renderSummary();
+            fitCeremonyTextareas();
           }
 
           ['order','start','items','setting'].forEach(key => {
@@ -1871,6 +1912,7 @@
                 syncExitBox();
               }
               renderSummary();
+              fitCeremonyTextareas();
             });
             tas[key] = ta;
 
@@ -1893,6 +1935,7 @@
                 row.start = text;
                 ta.value = text;
                 renderSummary();
+                fitCeremonyTextareas();
                 if(typingTexts[text]){
                   ta.focus();
                   ta.setSelectionRange(text.length, text.length);
@@ -1905,19 +1948,22 @@
             td.appendChild(ta);
 
             if(key === 'order'){
-              exitBox = document.createElement('label');
-              exitBox.className = 'th-cer-exit';
-              const cb = document.createElement('input');
-              cb.type = 'checkbox';
-              cb.checked = row.flowerExit;
-              cb.addEventListener('change', () => {
-                row.flowerExit = cb.checked;
-                syncExitBox();
-                renderSummary();
+              CEREMONY_CHECKS.forEach(check => {
+                const el = document.createElement('label');
+                el.className = 'th-cer-exit';
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.checked = !!row.checks[check.key];
+                cb.addEventListener('change', () => {
+                  row.checks[check.key] = cb.checked;
+                  syncExitBox();
+                  renderSummary();
+                });
+                el.appendChild(cb);
+                el.appendChild(document.createTextNode(' ' + check.text));
+                td.appendChild(el);
+                checkEls.push({el, check});
               });
-              exitBox.appendChild(cb);
-              exitBox.appendChild(document.createTextNode(' 화동 퇴장 체크 (필수)'));
-              td.appendChild(exitBox);
               syncExitBox();
             }
 
@@ -1971,6 +2017,7 @@
           tr.appendChild(actionTd);
           body.appendChild(tr);
         });
+        fitCeremonyTextareas();
       }
 
       function getCeremonyPeople(){
@@ -2244,6 +2291,7 @@
       });
       renderCeremonyRows();
       renderCeremonyPeopleList();
+      window.addEventListener('resize', fitCeremonyTextareas);
 
       root.querySelector('#th-print-pdf').addEventListener('click',printPdf);
 
