@@ -910,6 +910,10 @@
           {label:'더라운지 문-테라스-버진로드', text:'1부 (동반자 X) 더라운지 문-테라스-버진로드'}
         ]},
         {label:'1부 · 입장 동반자 O', options:[
+          {label:'테라스', text:'1부 (동반자 O) 테라스'},
+          {label:'블랙문 앞(문열림)', text:'1부 (동반자 O) 블랙문 앞(문열림)'},
+          {label:'블랙문 뒤(문닫힘)', text:'1부 (동반자 O) 블랙문 뒤(문닫힘)'},
+          {label:'더라운지 문-테라스-버진로드', text:'1부 (동반자 O) 더라운지 문-테라스-버진로드'},
           {label:'직접 입력', text:'1부 (동반자 O) ', typing:true}
         ]},
         {label:'2부', options:[
@@ -932,7 +936,13 @@
         '화동 꽃바구니+꽃잎',
         '럭키드로우(추첨권) 선물',
         '2부 웨딩 케이크',
-        '화동 카'
+        '화동 카',
+        '샌드 세레머니 기물',
+        '닭 날리기 인형',
+        '악보 (A4)',
+        '이벤트 경품',
+        '스피치 대본 A4',
+        '상장 및 상품'
       ];
 
       const CEREMONY_SETTING_OPTIONS = [
@@ -947,7 +957,10 @@
         '보면대',
         '마이크',
         '마이크+스탠드',
-        '웨딩케이스'
+        '웨딩케이스',
+        '2부 테이블',
+        '플라워세레머니 6개',
+        '스탠드 마이크'
       ];
 
       /* 식순 키워드 -> 신랑 신부 준비물 / 틸티드 준비물 자동 입력 목록.
@@ -972,15 +985,22 @@
         {keys:['축연'], items:[], setting:CEREMONY_READING_SET},
         {keys:['편지'], items:[ceremonyItem('신랑신부편지')], setting:[ceremonySetting('마이크')]},
         {keys:['화동'], items:[ceremonyItem('화동 꽃바구니')], setting:[]},
-        {keys:['럭키','추첨'], items:[ceremonyItem('럭키드로우')], setting:[ceremonySetting('이벤트 티켓함'), ceremonySetting('테이블+선물')]},
+        {keys:['럭키'], items:[ceremonyItem('럭키드로우')], setting:[ceremonySetting('이벤트 티켓함'), ceremonySetting('테이블+선물')]},
+        /* 럭키드로우가 아닌 일반 2부 이벤트/추첨. unless: 이 말이 있으면 이 항목은 건너뜀 */
+        {keys:['이벤트', '추첨'], unless:['럭키'], items:[ceremonyItem('이벤트 경품')], setting:[ceremonySetting('2부 테이블')]},
         {keys:['케이크'], items:[ceremonyItem('2부 웨딩 케이크')], setting:[ceremonySetting('테이블 + 케이크')]},
-        {keys:['건배'], items:[], setting:[CEREMONY_TOAST_SETTING]}
+        {keys:['건배'], items:[], setting:[CEREMONY_TOAST_SETTING]},
+        {keys:['샌드'], items:[ceremonyItem('샌드 세레머니')], setting:[ceremonySetting('2부 테이블')]},
+        {keys:['닭날리기'], items:[ceremonyItem('닭 날리기')], setting:[ceremonySetting('2부 테이블')]},
+        {keys:['행진'], items:[], setting:[ceremonySetting('플라워세레머니 6개')]},
+        {keys:['축주', '연주'], items:[ceremonyItem('악보')], setting:[ceremonySetting('보면대'), ceremonySetting('스탠드 마이크')]},
+        {keys:['스피치'], items:[ceremonyItem('스피치 대본')], setting:CEREMONY_READING_SET},
+        {keys:['상증정'], items:[ceremonyItem('상장 및 상품')], setting:[]}
       ];
 
-      /* 신랑/신부 입장 행에서만 '시작 위치' 드롭박스를 보여줌 */
+      /* 식순에 '입장'이 들어간 행에 '시작 위치'(입장 포인트) 드롭박스를 보여줌 */
       function isCeremonyEntrance(order){
-        const t = String(order || '').replace(/\s+/g, '');
-        return t.includes('입장') && (t.includes('신랑') || t.includes('신부'));
+        return String(order || '').replace(/\s+/g, '').includes('입장');
       }
 
       /* 화동/화견 입장 행은 시작 위치가 '버진로드 앞'으로 고정 */
@@ -1800,6 +1820,7 @@
         const setting = [];
         CEREMONY_KEYWORDS.forEach(entry => {
           if(!entry.keys.some(k => text.includes(k))) return;
+          if(entry.unless && entry.unless.some(k => text.includes(k))) return;
           (entry.items || []).forEach(v => { if(!items.includes(v)) items.push(v); });
           (entry.setting || []).forEach(v => { if(!setting.includes(v)) setting.push(v); });
         });
