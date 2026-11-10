@@ -895,7 +895,7 @@
 
       /* 식순 기능은 레이아웃/기능 확정 전까지 숨김. 확인용으로만 주소 뒤에 ?ceremony=1 을 붙이면 보임.
          확정 후 노출하려면 SHOW_CEREMONY_DEFAULT 를 true 로 바꾸면 됨 (탭/패널/사용방법/선택내역/PDF 한 번에 켜짐). */
-      const SHOW_CEREMONY_DEFAULT = false;
+      const SHOW_CEREMONY_DEFAULT = true;
       const SHOW_CEREMONY = SHOW_CEREMONY_DEFAULT || new URLSearchParams(location.search).get('ceremony') === '1';
       if(!SHOW_CEREMONY){
         root.querySelectorAll('.th-ceremony-only').forEach(el => { el.style.display = 'none'; });
